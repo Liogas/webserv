@@ -1,36 +1,41 @@
-#ifndef SERVEUR_HPP
-# define SERVEUR_HPP
+#ifndef SERVER_HPP
+# define SERVER_HPP
 
-# include <iostream>
 # include <map>
 # include <exception>
 # include <sys/epoll.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
-#include <unistd.h>
 # include <cstdio>
-#include <sstream>
+# include <sstream>
+# include "Request.hpp"
+# include "Client.hpp"
 
 /*
     Idees :
         - Creer un constructeur attendant un ficher de config
 */
 
-class Serveur
+class Client;
+class Request;
+
+class Server
 {
     public:
-        Serveur(void);
-        ~Serveur();
+        Server(void);
+        ~Server();
         void bindSocket(sa_family_t family, in_addr_t s_addr, int port);
         void ready(void);
         void start(void);
         void acceptClient(void);
         void handleClient(int client_fd);
+        int getEpollFd(void);
     private:
         int _fd;
         int _epollFd;
         bool _running;
         struct sockaddr_in _address;
+        std::map<int, Client*> _clients;
 
     class ErrorSocket : public std::exception
     {

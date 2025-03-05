@@ -1,27 +1,37 @@
-#include "Serveur.hpp"
+#include "Server.hpp"
 
 
-Serveur::Serveur(void)
+Server::Server(void)
 {
     this->_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (this->_fd == -1)
     {
         perror("socket");
-        throw Serveur::ErrorSocket();
+        throw Server::ErrorSocket();
     }
     this->_running = false;
     int reuse = 1;
     setsockopt(this->_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
-    std::cout << "[Serveur] created" << std::endl;
+    std::cout << "[Server] created" << std::endl;
 }
 
-Serveur::~Serveur(void)
+Server::~Server(void)
 {
+    if (this->_clients.size() > 0)
+    {
+        for (std::map<int, Client*>::iterator it = this->_clients.begin();
+            it != this->_clients.end(); ++it)
+        {
+            it->second->disconnect();
+            delete it->second;
+        }
+        this->_clients.erase(this->_clients.begin(), this->_clients.end());
+    }
     close(this->_fd);
-    std::cout << "[Serveur] closed" << std::endl;
+    std::cout << "[Server] closed" << std::endl;
 }
 
-void Serveur::bindSocket(sa_family_t family, in_addr_t s_addr, int port)
+void Server::bindSocket(sa_family_t family, in_addr_t s_addr, int port)
 {
     this->_address.sin_family = family;
     this->_address.sin_addr.s_addr = s_addr;
@@ -31,23 +41,23 @@ void Serveur::bindSocket(sa_family_t family, in_addr_t s_addr, int port)
             sizeof(this->_address)) == -1)
     {
         perror("bind");
-        throw Serveur::ErrorBind();
+        throw Server::ErrorBind();
     }
-    std::cout << "[Serveur] Listening on port " << ntohs(this->_address.sin_port) << std::endl;
+    std::cout << "[Server] Listening on port " << ntohs(this->_address.sin_port) << std::endl;
 }
 
-void Serveur::ready()
+void Server::ready()
 {
     if (listen(this->_fd, 10) == -1)
     {
         perror("listen");
-        throw Serveur::ErrorReady();
+        throw Server::ErrorReady();
     }
     this->_epollFd = epoll_create1(0);
     if (this->_epollFd == -1)
     {
         perror("epoll_create1");
-        throw Serveur::ErrorReady();
+        throw Server::ErrorReady();
     }
     struct epoll_event event;
     event.events = EPOLLIN;
@@ -55,11 +65,11 @@ void Serveur::ready()
     if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, this->_fd, &event) == -1)
     {
         perror("epoll_ctl");
-        throw Serveur::ErrorReady();
+        throw Server::ErrorReady();
     }
 }
 
-void Serveur::start(void)
+void Server::start(void)
 {
     int nfds;
     this->_running = true;
@@ -70,14 +80,13 @@ void Serveur::start(void)
         if (nfds == -1)
         {
             perror("epoll_wait");
-            throw Serveur::ErrorStart();
+            throw Server::ErrorStart();
         }
-        std::cout << "1" << std::endl;
         for (int i = 0; i < nfds; i++)
         {
             if (events[i].data.fd == this->_fd)
             {
-                std::cout << "[Serveur] new client detected" << std::endl;
+                std::cout << "[Server] new client detected" << std::endl;
                 this->acceptClient();
             }
             else
@@ -88,7 +97,7 @@ void Serveur::start(void)
     }
 }
 
-void Serveur::acceptClient(void)
+void Server::acceptClient(void)
 {
     int client_fd = accept(this->_fd, NULL, NULL);
     if (client_fd == -1)
@@ -96,35 +105,39 @@ void Serveur::acceptClient(void)
         perror("accept");
         return ;
     }
-    struct epoll_event event;
-    event.events = EPOLLIN;
-    event.data.fd = client_fd;
-    if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, client_fd, &event) == -1)
+    try
     {
-        perror("epoll_ctl");
-        throw Serveur::ErrorClient();
+        Client *client = new Client(client_fd, *this);
+        this->_clients.insert(std::make_pair(client_fd, client));
+    } catch (std::exception &e)
+    {
+        return ;
     }
     std::cout << "[Server] new client connected : " << client_fd << std::endl;
 }
 
-void Serveur::handleClient(int client_fd)
+void Server::handleClient(int client_fd)
 {
-    std::cout << "Entree dans handleClient avec : " << client_fd << std::endl;
-    char buffer[1024] = {0};
-    ssize_t bytes_read = read(client_fd, buffer, 1024);
-    if (bytes_read == 0)
+    std::map<int, Client*>::iterator it = this->_clients.find(client_fd);
+    if (it == this->_clients.end() || it->first != client_fd)
     {
-        std::cout << "[Server] client disconnected or error" << std::endl;
-        close(client_fd);
-        epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, client_fd, NULL);
+        std::cout << "[Server] request from unknown client" << std::endl;
         return ;
     }
-    else if (bytes_read < 0)
+    Request req = it->second->readRequest();
+    if (req.getBytesRead() == 0)
+    {
+        it->second->disconnect();
+        delete it->second;
+        this->_clients.erase(it);
+        return ;
+    }
+    else if (req.getBytesRead() < 0)
     {
         perror("read");
         return ;
     }
-    buffer[bytes_read] = '\0';
+    // req.getBuffer()[req.getBytesRead()] = '\0';
     // std::cout << "[Server] Received from client " << client_fd << ": " << buffer << std::endl;
 
     // Construire la réponse HTTP
@@ -137,31 +150,35 @@ void Serveur::handleClient(int client_fd)
     response += "Content-Length: " + oss.str() + "\r\n";
     response += "\r\n";
     response += response_body;
-
-    send(client_fd, response.c_str(), response.size(), 0);
+    it->second->sendResponse(response);
 }
 
-const char *Serveur::ErrorSocket::what() const throw()
+int Server::getEpollFd(void)
 {
-    return ("Error creation socket on serveur constructor");
+    return (this->_epollFd);
 }
 
-const char *Serveur::ErrorBind::what() const throw()
+const char *Server::ErrorSocket::what() const throw()
+{
+    return ("Error creation socket on Server constructor");
+}
+
+const char *Server::ErrorBind::what() const throw()
 {
     return ("Error on bindSocket method");
 }
 
-const char *Serveur::ErrorReady::what() const throw()
+const char *Server::ErrorReady::what() const throw()
 {
     return ("Error on ready method");
 }
 
-const char *Serveur::ErrorStart::what() const throw()
+const char *Server::ErrorStart::what() const throw()
 {
     return ("Error on start method");
 }
 
-const char *Serveur::ErrorClient::what() const throw()
+const char *Server::ErrorClient::what() const throw()
 {
     return ("Error on acceptClient method");
 }
