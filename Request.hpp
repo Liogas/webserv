@@ -10,10 +10,10 @@ class Request
         Request(ssize_t bytes, char *buffer);
         ~Request();
         ssize_t getBytesRead(void);
-        char *getBuffer(void);
+        std::string getBuffer(void);
     private:
         ssize_t _bytes_read;
-        char    *_buffer;
+        std::string _buffer;
 };
 
 #endif

@@ -10,6 +10,7 @@
 # include <sstream>
 # include "Request.hpp"
 # include "Client.hpp"
+# include <fcntl.h>
 
 /*
     Idees :

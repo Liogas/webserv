@@ -1,9 +1,9 @@
 #include "Server.hpp"
 
-
 Server::Server(void)
 {
     this->_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    fcntl(this->_fd, F_SETFL, O_NONBLOCK); 
     if (this->_fd == -1)
     {
         perror("socket");
@@ -76,7 +76,7 @@ void Server::start(void)
     while (this->_running)
     {
         struct epoll_event events[10];
-        nfds = epoll_wait(this->_epollFd, events, 10, -1);
+        nfds = epoll_wait(this->_epollFd, events, 10, 0);
         if (nfds == -1)
         {
             perror("epoll_wait");
@@ -100,6 +100,7 @@ void Server::start(void)
 void Server::acceptClient(void)
 {
     int client_fd = accept(this->_fd, NULL, NULL);
+    fcntl(client_fd, F_SETFL, O_NONBLOCK); 
     if (client_fd == -1)
     {
         perror("accept");
@@ -111,6 +112,7 @@ void Server::acceptClient(void)
         this->_clients.insert(std::make_pair(client_fd, client));
     } catch (std::exception &e)
     {
+        std::cerr << e.what() << std::endl;
         return ;
     }
     std::cout << "[Server] new client connected : " << client_fd << std::endl;
@@ -137,8 +139,7 @@ void Server::handleClient(int client_fd)
         perror("read");
         return ;
     }
-    // req.getBuffer()[req.getBytesRead()] = '\0';
-    // std::cout << "[Server] Received from client " << client_fd << ": " << buffer << std::endl;
+    // std::cout << "[Server] Received from client " << client_fd << ": " << req.getBuffer().c_str() << std::endl;
 
     // Construire la réponse HTTP
     std::ostringstream oss;
@@ -150,6 +151,10 @@ void Server::handleClient(int client_fd)
     response += "Content-Length: " + oss.str() + "\r\n";
     response += "\r\n";
     response += response_body;
+    // std::cout << std::endl;
+    // std::cout << std::endl;
+    // std::cout << "response : " << std::endl;
+    // std::cout << response << std::endl;
     it->second->sendResponse(response);
 }
 

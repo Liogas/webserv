@@ -1,8 +1,8 @@
 #include "Request.hpp"
 
-Request::Request(ssize_t bytes, char *buffer) : _bytes_read(bytes), _buffer(buffer)
+Request::Request(ssize_t bytes, char *buffer) : _bytes_read(bytes), _buffer(buffer, bytes)
 {
-    std::cout << "[Request created] bytes=" << bytes << " ; buffer=" << buffer << std::endl;
+    std::cout << "[Request created]" << std::endl;
 }
 
 Request::~Request(void)
@@ -15,7 +15,7 @@ ssize_t Request::getBytesRead(void)
     return (this->_bytes_read);
 }
 
-char *Request::getBuffer(void)
+std::string Request::getBuffer(void)
 {
     return (this->_buffer);
 }

@@ -22,6 +22,7 @@ Request Client::readRequest(void)
 {
     char buffer[1024] = {0};
     ssize_t bytes_read = read(this->_fd, buffer, 1024);
+    buffer[bytes_read] = '\0';
     Request req(bytes_read, buffer);
     return (req);
 }
