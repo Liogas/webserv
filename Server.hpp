@@ -1,16 +1,19 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-# include <map>
-# include <exception>
 # include <sys/epoll.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
-# include <cstdio>
+# include <fcntl.h>
+
+# include <map>
 # include <sstream>
+# include <cstdio>
+# include <fstream>
+
+# include "Route.hpp"
 # include "Request.hpp"
 # include "Client.hpp"
-# include <fcntl.h>
 
 /*
     Idees :
@@ -31,12 +34,14 @@ class Server
         void acceptClient(void);
         void handleClient(int client_fd);
         int getEpollFd(void);
+        void addRoute(Route route);
     private:
         int _fd;
         int _epollFd;
         bool _running;
         struct sockaddr_in _address;
         std::map<int, Client*> _clients;
+        std::map<std::string, Route> _routes;
 
     class ErrorSocket : public std::exception
     {

@@ -10,7 +10,6 @@ Server *serv = NULL;
 
 void signalHandler(int signum)
 {
-    std::cout << "ctrl+c detected" << std::endl;
     if (serv)
     {
         delete serv;

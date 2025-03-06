@@ -10,7 +10,7 @@ Client::Client(int fd, Server &serv) : _serv(serv), _fd(fd)
         perror("epoll_ctl");
         throw Client::ErrorClient();
     }
-    std::cout << "[Client] " << this->_fd << "created" << std::endl;
+    std::cout << "[Client] " << this->_fd << " created" << std::endl;
 }
 
 Client::~Client()
@@ -21,7 +21,7 @@ Client::~Client()
 Request Client::readRequest(void)
 {
     char buffer[1024] = {0};
-    ssize_t bytes_read = read(this->_fd, buffer, 1024);
+    ssize_t bytes_read = recv(this->_fd, buffer, sizeof(buffer) -1, MSG_DONTWAIT);
     buffer[bytes_read] = '\0';
     Request req(bytes_read, buffer);
     return (req);

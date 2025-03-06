@@ -139,23 +139,58 @@ void Server::handleClient(int client_fd)
         perror("read");
         return ;
     }
-    // std::cout << "[Server] Received from client " << client_fd << ": " << req.getBuffer().c_str() << std::endl;
 
-    // Construire la réponse HTTP
+    try
+    {
+        req.parseRequestLine();
+        std::cout << "infos sur la requete :" << std::endl;
+        std::cout << "Method : " << req.getRequestMethod() << std::endl;
+        std::cout << "Path : " << req.getRequestPath() << std::endl;
+        std::cout << "Version : " << req.getRequestVersion() << std::endl;
+        req.verifRequestLine();
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+        return ;
+    }
+   
+    std::vector<std::string> tmp = splitString(req.getRequestPath(), '/');
+    std::cout << "Decoupage du path (size : " << tmp.size() << ") : " << std::endl;
+    for (size_t i = 0; i < tmp.size(); i++)
+        std::cout << "|" << tmp.at(i) << "|" << std::endl;
+    
+    /*
+        REVOIR LE SYSTEME DE ROUTE POUR L'IMPLEMENTER ICI
+    */
+
+    // TEST POUR ENVOYER LE CONTENU D'UN FICHIER HTML
+    std::ifstream file("index.html");
+    if (!file)
+    {
+        std::cerr << "index.html not found" << std::endl;
+        return ;
+    }
+    std::string line;
+    std::string response_body;
     std::ostringstream oss;
-    std::string response_body = "<html><body><h1>Bienvenue sur Webserv</h1></body></html>";
-    std::string response = "HTTP/1.1 200 OK\r\n";
+    std::string response;
+    while (std::getline(file, line))
+        response_body += line;
+    file.close();
+    response += "HTTP/1.1 200 OK\r\n";
     response += "Content-Type: text/html\r\n";
     response += "Connection: keep-alive\r\n";  // Ne ferme pas la connexion
     oss << response_body.size();
     response += "Content-Length: " + oss.str() + "\r\n";
     response += "\r\n";
     response += response_body;
-    // std::cout << std::endl;
-    // std::cout << std::endl;
-    // std::cout << "response : " << std::endl;
-    // std::cout << response << std::endl;
     it->second->sendResponse(response);
+}
+
+void Server::addRoute(Route route)
+{
+    this->_routes.insert(std::make_pair(route.getPath(), route));
 }
 
 int Server::getEpollFd(void)
