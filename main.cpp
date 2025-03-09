@@ -1,43 +1,35 @@
-#include "Server.hpp"
-#include <csignal>
-#include <cstdlib>
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.cpp                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/08 12:51:15 by glions            #+#    #+#             */
+/*   Updated: 2025/03/09 18:26:43 by glions           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-/*
-    strace -e trace=socket ./webserv -> Trace les appels systemes (socket)
-*/
+#include "ParseConfig.hpp"
 
-Server *serv = NULL;
-
-void signalHandler(int signum)
+int main(int ac, char **av)
 {
-    if (serv)
+    if (ac != 2)
     {
-        delete serv;
-        serv = NULL;
+        std::cerr << "Try : ./webserv [config.conf]" << std::endl;
+        return (1);
     }
-    exit(signum);
-}
-
-int main(void)
-{
-    signal(SIGINT, signalHandler);
+    ParseConfig *config = NULL;
     try
     {
-        serv = new Server();
-        serv->bindSocket(AF_INET, INADDR_ANY, 8080);
-        serv->ready();
-        serv->start();
-        delete serv;
-        serv = NULL;
+        config = new ParseConfig(av[1]);
     }
-    catch (std::exception &e)
+    catch(const std::exception& e)
     {
         std::cerr << e.what() << std::endl;
-        if (serv)
-        {
-            delete serv;
-            serv = NULL;
-        }
+        delete config;
+        return (1);
     }
+    delete config;
+    return (0);
 }
-

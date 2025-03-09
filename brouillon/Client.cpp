@@ -2,7 +2,7 @@
 
 Client::Client(int fd, Server &serv) : _serv(serv), _fd(fd)
 {
-    struct epoll_event event;
+    struct epoll_event event = {};
     event.events = EPOLLIN;
     event.data.fd = this->_fd;
     if (epoll_ctl(this->_serv.getEpollFd(), EPOLL_CTL_ADD, this->_fd, &event) == -1)

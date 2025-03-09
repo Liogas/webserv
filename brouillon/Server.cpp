@@ -59,7 +59,7 @@ void Server::ready()
         perror("epoll_create1");
         throw Server::ErrorReady();
     }
-    struct epoll_event event;
+    struct epoll_event event = {};
     event.events = EPOLLIN;
     event.data.fd = this->_fd;
     if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, this->_fd, &event) == -1)
