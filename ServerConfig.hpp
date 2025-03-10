@@ -1,34 +1,30 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   utils.hpp                                          :+:      :+:    :+:   */
+/*   ServerConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/03/08 19:49:02 by glions            #+#    #+#             */
-/*   Updated: 2025/03/10 12:53:05 by glions           ###   ########.fr       */
+/*   Created: 2025/03/10 15:29:40 by glions            #+#    #+#             */
+/*   Updated: 2025/03/10 15:32:39 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef UTILS_HPP
-# define UTILS_HPP
+#ifndef SERVERCONFIG_HPP
+# define SERVERCONFIG_HPP
 
-# include <iostream>
-# include <vector>
-# include <sstream>
-# include <fstream>
+# include "utils.hpp"
 
-enum Method
+class ServerConfig
 {
-    GET,
-    POST,
-    DELETE,
-    UNKNOWN
+    public:
+        ServerConfig(void);
+        ~ServerConfig();
+        void addServerName(std::string name);
+        void addPort(int port);
+    private:
+        std::vector<std::string> server_name;
+        std::vector<int> ports;
 };
-
-// MANIP STRING
-std::vector<std::string> splitString(const std::string str, char sep);
-bool isValidExtension(const std::string &filename, const std::string &extension);
-std::vector<std::string> readFile(std::ifstream &file);
 
 #endif

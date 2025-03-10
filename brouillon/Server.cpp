@@ -3,7 +3,7 @@
 Server::Server(void)
 {
     this->_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    fcntl(this->_fd, F_SETFL, O_NONBLOCK); 
+    fcntl(this->_fd, F_SETFL, O_NONBLOCK);
     if (this->_fd == -1)
     {
         perror("socket");
@@ -53,7 +53,7 @@ void Server::ready()
         perror("listen");
         throw Server::ErrorReady();
     }
-    this->_epollFd = epoll_create1(0);
+    this->_epollFd = epoll_create(0);
     if (this->_epollFd == -1)
     {
         perror("epoll_create1");

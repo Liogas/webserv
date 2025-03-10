@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:51:15 by glions            #+#    #+#             */
-/*   Updated: 2025/03/09 18:26:43 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/10 15:51:52 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@ int main(int ac, char **av)
     try
     {
         config = new ParseConfig(av[1]);
+        config->startParsing();
     }
     catch(const std::exception& e)
     {

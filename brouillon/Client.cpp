@@ -30,8 +30,8 @@ Request Client::readRequest(void)
 void Client::disconnect(void)
 {
     std::cout << "[Server] client " << this->_fd << " disconnected" << std::endl;
-    close(this->_fd);
     epoll_ctl(this->_serv.getEpollFd(), EPOLL_CTL_DEL, this->_fd, NULL);
+    close(this->_fd);
 }
 
 void Client::sendResponse(std::string response)

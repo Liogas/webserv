@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 19:49:21 by glions            #+#    #+#             */
-/*   Updated: 2025/03/09 15:22:40 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/10 13:40:33 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,4 +40,14 @@ bool isValidExtension(const std::string &filename, const std::string &extension)
     if (extension == ext)
         return (true);
     return (false);
+}
+
+std::vector<std::string> readFile(std::ifstream &file)
+{
+    std::vector<std::string> lines;
+    std::string line;
+    std::cout << "Je rentre ici" << std::endl;
+    while (std::getline(file, line))
+        lines.push_back(line);
+    return (lines);
 }
