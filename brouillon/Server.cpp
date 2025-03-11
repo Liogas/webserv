@@ -27,6 +27,7 @@ Server::~Server(void)
         }
         this->_clients.erase(this->_clients.begin(), this->_clients.end());
     }
+    close(this->_epollFd);
     close(this->_fd);
     std::cout << "[Server] closed" << std::endl;
 }
@@ -53,7 +54,7 @@ void Server::ready()
         perror("listen");
         throw Server::ErrorReady();
     }
-    this->_epollFd = epoll_create(0);
+    this->_epollFd = epoll_create1(0);
     if (this->_epollFd == -1)
     {
         perror("epoll_create1");

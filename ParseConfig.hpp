@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:52:16 by glions            #+#    #+#             */
-/*   Updated: 2025/03/10 15:21:42 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/11 15:35:02 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 # include <exception>
 
 # include "utils.hpp"
+# include "ServerConfig.hpp"
 
 class ParseConfig
 {
@@ -27,11 +28,18 @@ class ParseConfig
         bool interpretArgs(std::vector<std::string> args);
         bool interpretOnRoot(std::vector<std::string> args);
         bool interpretOnServer(std::vector<std::string> args);
+        bool interpretListen(std::vector<std::string> args);
+        ParseConfig &operator=(const ParseConfig &copy);
+        std::string getPath(void) const;
+        bool getBlocServer(void) const;
+        bool getBlocRoot(void) const;
+        // std::vector<ServerConfig> getConfigs(void) const;
     private:
         std::string _path;
         std::ifstream _file;
         bool _blocServer;
         bool _blocRoot;
+        ServerConfig *_config;
 
     class ErrorExtension : public std::exception
     {

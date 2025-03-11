@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:51:15 by glions            #+#    #+#             */
-/*   Updated: 2025/03/10 15:51:52 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/11 15:24:34 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ int main(int ac, char **av)
     {
         std::cerr << e.what() << std::endl;
         delete config;
+        config = NULL;
         return (1);
     }
     delete config;

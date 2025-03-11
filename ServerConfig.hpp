@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/10 15:29:40 by glions            #+#    #+#             */
-/*   Updated: 2025/03/10 15:32:39 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/11 15:33:57 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,12 +19,16 @@ class ServerConfig
 {
     public:
         ServerConfig(void);
+        ServerConfig(ServerConfig const &copy);
         ~ServerConfig();
         void addServerName(std::string name);
         void addPort(int port);
+        std::vector<std::string> getServerNames(void) const;
+        std::vector<int> getPorts(void) const;
+        ServerConfig &operator=(const ServerConfig &copy);
     private:
-        std::vector<std::string> server_name;
-        std::vector<int> ports;
+        std::vector<std::string> _server_names;
+        std::vector<int> _ports;
 };
 
 #endif

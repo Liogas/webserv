@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 19:49:02 by glions            #+#    #+#             */
-/*   Updated: 2025/03/10 12:53:05 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/11 09:32:05 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,5 +30,6 @@ enum Method
 std::vector<std::string> splitString(const std::string str, char sep);
 bool isValidExtension(const std::string &filename, const std::string &extension);
 std::vector<std::string> readFile(std::ifstream &file);
+void cleanArgs(std::vector<std::string> *args);
 
 #endif

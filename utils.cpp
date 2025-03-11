@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 19:49:21 by glions            #+#    #+#             */
-/*   Updated: 2025/03/10 13:40:33 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/11 10:04:44 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,19 @@ bool isValidExtension(const std::string &filename, const std::string &extension)
     if (extension == ext)
         return (true);
     return (false);
+}
+
+void cleanArgs(std::vector<std::string> *args)
+{
+    for (std::vector<std::string>::iterator it = args->begin(); it != args->end(); ++it)
+    {
+        std::cout << "size de l'args : " << it->size() << std::endl;
+        if (*it == "\t" || *it == "\n" || *it == "" || *it == "\r" || *it == "\v" || it->size() == 0)
+        {
+            std::cout << "Je retire" << std::endl;
+            args->erase(it);
+        }
+    }
 }
 
 std::vector<std::string> readFile(std::ifstream &file)
