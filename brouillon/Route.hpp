@@ -1,35 +1,41 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Route.hpp                                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/12 14:45:03 by glions            #+#    #+#             */
+/*   Updated: 2025/03/12 16:12:47 by glions           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef ROUTE_HPP
 # define ROUTE_HPP
 
-# include <set>
-# include <iostream>
-
 # include "utils.hpp"
+
+typedef struct s_redirection
+{
+    int code;
+    char path;  
+} t_redirection;
 
 class Route
 {
     public:
-        Route(std::string path);
-        ~Route();
-        void setMethodHTTP(std::set<Method> methods);
-        void setRedirectionHTTP(std::string newUrl);
-        void setDirectoryPath(std::string path);
-        void setDirectoryListing(bool val);
-        void setDefaultFile(std::string path);
-        std::string getPath(void);
-        std::string getRedirectionHTTP(void);
-        std::string getDirectoryPath(void);
-        bool getDirectoryListing(void);
-        std::string getDefaultFile(void);
-        std::set<Method> getMethods(void);
-    private:
-        std::set<Method> _methodsHTTP;
-        std::string _path;
-        std::string _redirectionHTTP;
-        std::string _directory_path;
-        bool _directory_listing;
-        std::string _default_file;
         
+    private:
+        std::string _domain;
+        std::string _root;
+        std::string _index;
+        int _bodysize;
+        bool autoindex;
+        std::vector<Method> _methods;
+        std::map<int, std::string> _error_pages;
+        bool _redir_in;
+        t_redirection redir;
+
 };
 
 #endif

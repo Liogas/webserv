@@ -189,10 +189,6 @@ void Server::handleClient(int client_fd)
     it->second->sendResponse(response);
 }
 
-void Server::addRoute(Route route)
-{
-    this->_routes.insert(std::make_pair(route.getPath(), route));
-}
 
 int Server::getEpollFd(void)
 {

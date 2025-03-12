@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/10 15:29:40 by glions            #+#    #+#             */
-/*   Updated: 2025/03/11 15:33:57 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/12 14:33:09 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 # define SERVERCONFIG_HPP
 
 # include "utils.hpp"
+# include "Route.hpp"
 
 class ServerConfig
 {
@@ -21,14 +22,15 @@ class ServerConfig
         ServerConfig(void);
         ServerConfig(ServerConfig const &copy);
         ~ServerConfig();
-        void addServerName(std::string name);
-        void addPort(int port);
-        std::vector<std::string> getServerNames(void) const;
-        std::vector<int> getPorts(void) const;
+        void setServerName(std::string name);
+        void setPort(int port);
+        std::string getServerName(void) const;
+        int getPort(void) const;
         ServerConfig &operator=(const ServerConfig &copy);
     private:
-        std::vector<std::string> _server_names;
-        std::vector<int> _ports;
+        std::string _serverName;
+        int _port;
+        std::vector<Route> _routes;
 };
 
 #endif

@@ -6,13 +6,13 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/11 11:04:34 by glions            #+#    #+#             */
-/*   Updated: 2025/03/11 15:34:10 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/12 14:24:54 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ServerConfig.hpp"
 
-ServerConfig::ServerConfig(void) : _server_names(), _ports()
+ServerConfig::ServerConfig(void) : _serverName(), _port()
 {
     std::cout << "[ServerConfig] created" << std::endl;
 }
@@ -21,8 +21,8 @@ ServerConfig::ServerConfig(ServerConfig const &copy)
 {
     if (this != &copy)
     {
-        this->_ports = copy.getPorts();
-        this->_server_names = copy.getServerNames();
+        this->_port = copy.getPort();
+        this->_serverName = copy.getServerName();
     }
 }
 
@@ -31,24 +31,24 @@ ServerConfig::~ServerConfig()
     std::cout << "[ServerConfig] destroyed" << std::endl;
 }
 
-void ServerConfig::addServerName(std::string name)
+void ServerConfig::setServerName(std::string name)
 {
-    this->_server_names.push_back(name);
+    this->_serverName = name;
 }
 
-void ServerConfig::addPort(int port)
+void ServerConfig::setPort(int port)
 {
-    this->_ports.push_back(port);
+    this->_port = port;
 }
 
-std::vector<std::string> ServerConfig::getServerNames(void) const
+std::string ServerConfig::getServerName(void) const
 {
-    return (this->_server_names);
+    return (this->_serverName);
 }
 
-std::vector<int> ServerConfig::getPorts(void) const
+int ServerConfig::getPort(void) const
 {
-    return (this->_ports);
+    return (this->_port);
 }
 
 ServerConfig &ServerConfig::operator=(const ServerConfig &copy)
@@ -56,8 +56,8 @@ ServerConfig &ServerConfig::operator=(const ServerConfig &copy)
     std::cout << "[ServerConfig] copy assigment called" << std::endl;
     if (this != &copy)
     {
-        this->_ports = copy._ports;
-        this->_server_names = copy._server_names;
+        this->_port = copy.getPort();
+        this->_serverName = copy.getServerName();
     }
     return (*this);
 }
