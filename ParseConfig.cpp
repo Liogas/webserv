@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:54:05 by glions            #+#    #+#             */
-/*   Updated: 2025/03/12 14:24:20 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/13 14:17:51 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@ ParseConfig::ParseConfig(std::string path) : _path(path), _config(new ServerConf
         throw ParseConfig::ErrorFile();
     this->_blocRoute = false;
     this->_blocServer = false;
+    this->_route = NULL;
     std::cout << "[ParseConfig] created with " << this->_path << std::endl;
 }
 
@@ -30,7 +31,7 @@ void ParseConfig::startParsing(void)
     std::vector<std::string> contentFile = readFile(this->_file);
     for (size_t i = 0; i < contentFile.size(); i++)
     {
-        std::cout << "Travaille sur la ligne : " << contentFile[i] << std::endl;
+        // std::cout << "Travaille sur la ligne : " << contentFile[i] << std::endl;
         std::vector<std::string> args = splitString(contentFile[i], ' ');
         if (args.size() > 0 && args[0].at(0) != '#')
         {
@@ -68,6 +69,8 @@ bool ParseConfig::interpretOnRoute(std::vector<std::string> args)
     if (sizeArgs == 1 && args[0] == "}")
     {
         std::cout << "Fin du bloc de route" << std::endl;
+        this->_config->addRoute(this->_route);
+        this->_route = NULL;
         this->_blocRoute = false;
     }
     else
@@ -123,6 +126,7 @@ bool ParseConfig::interpretOnServer(std::vector<std::string> args)
     else if (sizeArgs == 3 && args[0] == "location" && args[2] == "{")
     {
         std::cout << "Debut d'une nouvelle route" << std::endl;
+        this->_route = new Route(args[1]);
         this->_blocRoute = true;
     }
     else if (sizeArgs == 1 && args[0] == "}")
@@ -157,9 +161,9 @@ ParseConfig &ParseConfig::operator=(const ParseConfig &copy)
     return (*this);
 }
 
-ServerConfig ParseConfig::getConfig(void) const
+ServerConfig *ParseConfig::getConfig(void) const
 {
-    return (*this->_config);
+    return (this->_config);
 }
 
 bool ParseConfig::getBlocRoute(void) const
@@ -176,16 +180,6 @@ std::string ParseConfig::getPath(void) const
 {
     return (this->_path);
 }
-
-// ServerConfig ParseConfig::getConfig(void) const
-// {
-//     return (this->_config);
-// }
-
-// std::vector<ServerConfig> ParseConfig::getConfigs(void) const
-// {
-//     return (this->_configs);
-// }
 
 const char *ParseConfig::ErrorExtension::what() const throw()
 {
