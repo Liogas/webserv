@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:52:16 by glions            #+#    #+#             */
-/*   Updated: 2025/03/13 11:57:41 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/17 13:57:24 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,36 +24,38 @@ class ParseConfig
     public:
         ParseConfig(std::string path);
         ~ParseConfig();
-        void startParsing(void);
-        bool interpretArgs(std::vector<std::string> args);
-        bool interpretOnRoute(std::vector<std::string> args);
-        bool interpretOnServer(std::vector<std::string> args);
-        bool interpretListen(std::vector<std::string> args);
-        bool interpretServerNames(std::vector<std::string> args);
         ParseConfig &operator=(const ParseConfig &copy);
         std::string getPath(void) const;
         bool getBlocServer(void) const;
         bool getBlocRoute(void) const;
-        ServerConfig *getConfig(void) const;
+        std::vector<ServerConfig *> getConfigs(void) const;
+        bool startParsing();
+        void parseServer(size_t *i, std::vector<std::string> lines);
+        void parseRoute(size_t *i, std::vector<std::string> lines);
     private:
         std::string _path;
         std::ifstream _file;
         bool _blocServer;
         bool _blocRoute;
-        ServerConfig *_config;
-        Route *_route;
+        std::vector<ServerConfig *> _configs;
 
-    class ErrorExtension : public std::exception
-    {
-        public:
-            virtual const char *what() const throw();
-    };
     class ErrorFile : public std::exception
     {
         public:
             virtual const char *what() const throw();
     };
+    class ErrorFileExtension : public std::exception
+    {
+        public:
+            virtual const char *what() const throw();
+    };
+    
     class ErrorFileContent : public std::exception
+    {
+        public:
+            virtual const char *what() const throw();
+    };
+    class ErrorFileEmpty : public std::exception
     {
         public:
             virtual const char *what() const throw();

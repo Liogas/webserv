@@ -6,148 +6,168 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:54:05 by glions            #+#    #+#             */
-/*   Updated: 2025/03/13 14:17:51 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/17 13:59:16 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ParseConfig.hpp"
 # include "utils.hpp"
 
-ParseConfig::ParseConfig(std::string path) : _path(path), _config(new ServerConfig())
+ParseConfig::ParseConfig(std::string path) : _path(path), _configs()
 {
     if (!isValidExtension(this->_path, "conf"))
-        throw ParseConfig::ErrorExtension();
+        throw ParseConfig::ErrorFileExtension();
     this->_file.open(this->_path.c_str());
     if (!this->_file.is_open())
         throw ParseConfig::ErrorFile();
     this->_blocRoute = false;
     this->_blocServer = false;
-    this->_route = NULL;
     std::cout << "[ParseConfig] created with " << this->_path << std::endl;
 }
 
-void ParseConfig::startParsing(void)
+bool ParseConfig::startParsing(void)
 {
     std::vector<std::string> contentFile = readFile(this->_file);
+    if (contentFile.size() <= 0)
+        throw ParseConfig::ErrorFileEmpty();
     for (size_t i = 0; i < contentFile.size(); i++)
     {
-        // std::cout << "Travaille sur la ligne : " << contentFile[i] << std::endl;
         std::vector<std::string> args = splitString(contentFile[i], ' ');
-        if (args.size() > 0 && args[0].at(0) != '#')
-        {
-            if (!this->interpretArgs(args))
-                throw ParseConfig::ErrorFileContent();
-        }
-    }
-    std::cout << "Config du server : " << std::endl;
-    std::cout << "Port : " << this->_config->getPort() << std::endl;
-    std::cout << "Server_name : " << this->_config->getServerName() << std::endl;
-}
-
-bool ParseConfig::interpretArgs(std::vector<std::string> args)
-{
-    if (this->_blocRoute)
-        return (this->interpretOnRoute(args));
-    else if (this->_blocServer)
-        return (this->interpretOnServer(args));
-    else
-    {
+        cleanArgs(&args);
         if (args.size() == 2 && args[0] == "server" && args[1] == "{")
         {
-            std::cout << "bloc server detecte" << std::endl;
-            this->_blocServer = true;
+            try
+            {
+                i++;
+                this->parseServer(&i, contentFile);
+            }
+            catch (std::exception &e)
+            {
+                std::cerr << e.what();
+                return (false);
+            }
+        }
+        else if (args.size() != 0)
+        {
+            std::cerr << "[!ParseConfig!] bad value on file" << std::endl;
+            return (false);
+        }
+    }
+    return (true);
+}
+
+void ParseConfig::parseServer(size_t *i, std::vector<std::string> lines)
+{
+    ServerConfig *conf = new ServerConfig();
+    while (*i < lines.size())
+    {
+        std::vector<std::string> args = splitString(lines[*i], ' ');
+        cleanArgs(&args);
+        for (size_t i = 0; i < args.size(); i++)
+        {
+            std::cout << "args[" << i << "] = " << args[i] << std::endl;
+        }
+        // LISTEN
+        if (args.size() >= 1 && args[0] == "listen")
+        {
+            try
+            {
+                std::cout << "Listen detected" << std::endl;
+                conf->setPort(args);
+            } catch (std::exception &e) {
+                delete conf;
+                std::cerr << "listen : " << e.what() << std::endl;
+                throw ParseConfig::ErrorFileContent();
+            }
+        }
+        // SERVER_NAME
+        else if (args.size() >= 1 && args[0] == "server_name")
+        {
+            try
+            {
+                std::cout << "Server name detected" << std::endl;
+                conf->setServerName(args);
+            } catch (std::exception &e) {
+                delete conf;
+                std::cerr << "server_name : " << e.what() << std::endl;
+                throw ParseConfig::ErrorFileContent();
+            }
+        }
+        // ERROR_PAGE
+        else if (args.size() >= 1 && args[0] == "error_page")
+        {
+            try
+            {
+                std::cout << "Error_page detected" << std::endl;
+                conf->addErrorPage(args);
+            } catch(const std::exception& e) {
+                delete conf;
+                std::cerr << "error_page : " << e.what() << std::endl;
+                throw ParseConfig::ErrorFileContent();
+            }
+        }
+        // CLIENT_MAX_BODY
+        else if (args.size() >= 1 && args[0] == "client_max_body")
+        {
+            try
+            {
+                std::cout << "Client max body detected" << std::endl;
+                conf->setClientMaxBody(args);
+            } catch (std::exception &e) {
+                delete conf;
+                std::cerr << "client_max_body : " << e.what() << std::endl;
+                throw ParseConfig::ErrorFileContent();
+            }
+        }
+        // LOCATION -> NEW ROUTE
+        else if (args.size() == 3 && args[0] == "location" && args[2] == "{")
+        {
+            try
+            {
+                std::cout << "Location detected" << std::endl;
+                this->parseRoute(i, lines);
+            } catch (std::exception &e) {
+                delete conf;
+                std::cerr << "location : " << e.what() << std::endl;
+                throw ParseConfig::ErrorFileContent();
+            }
+        }
+        else if (args.size() == 1 && args[0] == "}")
+        {
+            std::cout << "Config de mon server : " << std::endl;
+            std::cout << "Port : " << conf->getPort() << std::endl;
+            std::cout << "Server_name : " << conf->getServerName() << std::endl;
+            std::cout << "Size max body : " << conf->getClientMaxBody() << std::endl;
+            std::cout << "Error pages : " << std::endl;
+            std::map<int, std::string> tmp = conf->getErrorPages();
+            for (std::map<int, std::string>::iterator it = tmp.begin();
+                it != tmp.end(); ++it)
+            {
+                std::cout << "Error : " << it->first << " -> " << it->second << std::endl; 
+            }
+            delete conf;
+            return ;
         }
         else
-            return (false);
-    }
-    return (true);
-}
-
-bool ParseConfig::interpretOnRoute(std::vector<std::string> args)
-{
-    int sizeArgs = args.size();
-    if (sizeArgs == 1 && args[0] == "}")
-    {
-        std::cout << "Fin du bloc de route" << std::endl;
-        this->_config->addRoute(this->_route);
-        this->_route = NULL;
-        this->_blocRoute = false;
-    }
-    else
-        std::cout << "Ligne de route pas encore prete" << std::endl;
-    return (true);
-}
-
-bool ParseConfig::interpretListen(std::vector<std::string> args)
-{
-    if (args.size() > 2)
-    {
-        std::cerr << "Error : to many args for listen" << std::endl;
-        return (false);
-    }
-    for (size_t i = 0; i < args[1].size(); i++)
-    {
-    if (!isdigit(args[1].at(i)))
-    {
-            std::cerr << "Error: listen args on config file" << std::endl;
-            return (false);
+        {
+            delete conf;
+            throw ParseConfig::ErrorFileContent();
         }
+        (*i)++;
     }
-    int num;
-    std::istringstream(args[1]) >> num;
-    this->_config->setPort(num);
-    return (true);
+    delete conf;
+    throw ParseConfig::ErrorFileContent();
 }
 
-bool ParseConfig::interpretServerNames(std::vector<std::string> args)
+void ParseConfig::parseRoute(size_t *i, std::vector<std::string> lines)
 {
-    if (args.size() > 2)
-    {
-        std::cerr << "Error : to many args for server_names" << std::endl;
-        return (false);
-    }
-    this->_config->setServerName(args[1]);
-    return (true);
-}
-
-bool ParseConfig::interpretOnServer(std::vector<std::string> args)
-{
-    int sizeArgs = args.size();
-    if (sizeArgs >= 2 && args[0] == "listen")
-    {
-        std::cout << "parametre listen detecte" << std::endl;
-        return (this->interpretListen(args));
-    }
-    else if (sizeArgs >= 2 && args[0] == "server_names")
-    {
-        std::cout << "parametre server_names detecte" << std::endl;
-        return (this->interpretServerNames(args));
-    }
-    else if (sizeArgs == 3 && args[0] == "location" && args[2] == "{")
-    {
-        std::cout << "Debut d'une nouvelle route" << std::endl;
-        this->_route = new Route(args[1]);
-        this->_blocRoute = true;
-    }
-    else if (sizeArgs == 1 && args[0] == "}")
-    {
-        this->_blocServer = false;
-        std::cout << "Fin du bloc serveur" << std::endl;
-    }
-    else
-        return (false);
-    return (true);
+    Route *route = new Route();
 }
 
 ParseConfig::~ParseConfig(void)
 {
     if (this->_file.is_open())
         this->_file.close();
-    if (this->_config)
-    {
-        delete this->_config;
-        this->_config = NULL;
-    }
     std::cout << "[ParseConfig] destructor called" << std::endl;
 }
 
@@ -161,9 +181,9 @@ ParseConfig &ParseConfig::operator=(const ParseConfig &copy)
     return (*this);
 }
 
-ServerConfig *ParseConfig::getConfig(void) const
+std::vector<ServerConfig *> ParseConfig::getConfigs(void) const
 {
-    return (this->_config);
+    return (this->_configs);
 }
 
 bool ParseConfig::getBlocRoute(void) const
@@ -181,7 +201,7 @@ std::string ParseConfig::getPath(void) const
     return (this->_path);
 }
 
-const char *ParseConfig::ErrorExtension::what() const throw()
+const char *ParseConfig::ErrorFileExtension::what() const throw()
 {
     return ("[!ParseConfig!] extension not valid");
 }
@@ -194,4 +214,9 @@ const char *ParseConfig::ErrorFile::what() const throw()
 const char *ParseConfig::ErrorFileContent::what() const throw()
 {
     return ("[!ParseConfig!] bad value on file");
+}
+
+const char *ParseConfig::ErrorFileEmpty::what() const throw()
+{
+    return ("[!ParseConfig!] file is empty");
 }

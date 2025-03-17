@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 19:49:21 by glions            #+#    #+#             */
-/*   Updated: 2025/03/13 10:11:54 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/17 11:52:52 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,12 +46,8 @@ void cleanArgs(std::vector<std::string> *args)
 {
     for (std::vector<std::string>::iterator it = args->begin(); it != args->end(); ++it)
     {
-        std::cout << "size de l'args : " << it->size() << std::endl;
-        if (*it == "\t" || *it == "\n" || *it == "" || *it == "\r" || *it == "\v" || it->size() == 0)
-        {
-            std::cout << "Je retire" << std::endl;
+        if (it->size() == 0 || *it == "\t" || *it == "\n" || *it == "" || *it == "\r" || *it == "\v")
             args->erase(it);
-        }
     }
 }
 
@@ -59,7 +55,6 @@ std::vector<std::string> readFile(std::ifstream &file)
 {
     std::vector<std::string> lines;
     std::string line;
-    std::cout << "Je rentre ici" << std::endl;
     while (std::getline(file, line))
         lines.push_back(line);
     return (lines);

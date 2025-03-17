@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/10 15:29:40 by glions            #+#    #+#             */
-/*   Updated: 2025/03/13 11:04:45 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/17 12:06:36 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,16 +25,44 @@ class ServerConfig
         ServerConfig &operator=(const ServerConfig &copy);
         // SETTERS
         void setServerName(std::string name);
+        void setServerName(std::vector<std::string> args);
+        void setPort(std::vector<std::string> args);
         void setPort(int port);
         void addRoute(Route *route);
+        void addErrorPage(std::vector<std::string> args);
+        void setClientMaxBody(std::vector<std::string> args);
         // GETTERS
         int getPort(void) const;
+        size_t getClientMaxBody(void) const;
         std::string getServerName(void) const;
         std::map<std::string, Route *> getRoutes(void) const;
+        std::map<int, std::string> getErrorPages(void) const;
     private:
         std::string _serverName;
         int _port;
+        size_t _clientMaxBody;
+        std::map<int, std::string> _errorPages;
         std::map<std::string, Route *> _routes;
+    class ErrorToManyArgs : public std::exception
+    {
+        public:
+            virtual const char *what() const throw();
+    };
+    class ErrorNotEnoughArgs : public std::exception
+    {
+        public:
+            virtual const char *what() const throw();
+    };
+    class ErrorNotValidArgs : public std::exception
+    {
+        public:
+            virtual const char *what() const throw();
+    };
+    class ErrorErrorPageAlreadyIn : public std::exception
+    {
+        public:
+            virtual const char *what() const throw();
+    };
 };
 
 #endif

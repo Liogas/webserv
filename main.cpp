@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:51:15 by glions            #+#    #+#             */
-/*   Updated: 2025/03/13 14:07:22 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/17 12:09:57 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,11 +53,10 @@ int main(int ac, char **av)
         // {
         //     std::cout << it->first << std::endl;
         // }
-        server = new Server();
-        server->bindSocket(AF_INET, INADDR_ANY, parseConfig->getConfig()->getPort());
-        server->ready();
-        server->start();
-        std::cout << "DEDEDEDED" << std::endl;
+        // server = new Server();
+        // server->bindSocket(AF_INET, INADDR_ANY, parseConfig->getConfig()->getPort());
+        // server->ready();
+        // server->start();
     }
     catch(const std::exception& e)
     {
@@ -69,7 +68,6 @@ int main(int ac, char **av)
         server = NULL;
         return (1);
     }
-    std::cout << "De retour ici" << std::endl;
     delete parseConfig;
     delete server;
     return (0);
