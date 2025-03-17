@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:52:16 by glions            #+#    #+#             */
-/*   Updated: 2025/03/17 13:57:24 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/17 15:24:47 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,8 +30,8 @@ class ParseConfig
         bool getBlocRoute(void) const;
         std::vector<ServerConfig *> getConfigs(void) const;
         bool startParsing();
-        void parseServer(size_t *i, std::vector<std::string> lines);
-        void parseRoute(size_t *i, std::vector<std::string> lines);
+        ServerConfig *parseServer(size_t *i, std::vector<std::string> lines);
+        Route *parseRoute(size_t *i, std::vector<std::string> lines);
     private:
         std::string _path;
         std::ifstream _file;

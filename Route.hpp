@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/12 14:45:03 by glions            #+#    #+#             */
-/*   Updated: 2025/03/13 10:28:01 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/17 15:09:34 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ typedef struct s_redirection
 {
 	bool exist;
 	int code;
-	char path;
+	std::string path;
 } t_redirection;
 
 class Route
@@ -34,12 +34,17 @@ class Route
 		// SETTERS
 		void setPath(std::string path);
 		void setRoot(std::string root);
+		void setRoot(std::vector<std::string> args);
 		void setIndex(std::string index);
+		void setIndex(std::vector<std::string> args);
 		void setBodySize(int size);
 		void setAutoIndex(bool value);
+		void setAutoIndex(std::vector<std::string> args);
 		void addMethod(Method m);
+		void addMethods(std::vector<std::string> args);
 		void addErrorPage(int key, std::string path);
 		void setRedir(t_redirection redir);
+		void setRedir(std::vector<std::string> args);
 		// GETTERS
 		std::string getPath(void) const;
 		std::string getRoot(void) const;
@@ -59,6 +64,21 @@ class Route
 		std::vector<Method> _methods;
 		std::map<int, std::string> _error_pages;
 		t_redirection _redir;
+	class ErrorToManyArgs : public std::exception
+	{
+		public:
+			virtual const char *what() const throw();
+	};
+	class ErrorNotEnoughArgs : public std::exception
+	{
+		public:
+			virtual const char *what() const throw();
+	};
+	class ErrorNotValidArgs : public std::exception
+	{
+		public:
+			virtual const char *what() const throw();
+	};
 };
 
 #endif

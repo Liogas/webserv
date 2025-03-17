@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/11 11:04:34 by glions            #+#    #+#             */
-/*   Updated: 2025/03/17 12:10:21 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/17 15:15:57 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,13 +77,9 @@ void ServerConfig::setServerName(std::vector<std::string> args)
 void ServerConfig::setPort(std::vector<std::string> args)
 {
     if (args.size() > 2)
-    {
         throw ServerConfig::ErrorToManyArgs();
-    }
     else if (args.size() < 2)
-    {
         throw ServerConfig::ErrorNotEnoughArgs();
-    }
     for (size_t i = 0; i < args[1].size(); i++)
     {
         if (!isdigit(args[1].at(i)))

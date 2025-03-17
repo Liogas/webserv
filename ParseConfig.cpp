@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:54:05 by glions            #+#    #+#             */
-/*   Updated: 2025/03/17 13:59:16 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/17 16:22:22 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,8 @@ bool ParseConfig::startParsing(void)
             try
             {
                 i++;
-                this->parseServer(&i, contentFile);
+                ServerConfig *tmp = this->parseServer(&i, contentFile);
+                this->_configs.push_back(tmp);
             }
             catch (std::exception &e)
             {
@@ -56,7 +57,7 @@ bool ParseConfig::startParsing(void)
     return (true);
 }
 
-void ParseConfig::parseServer(size_t *i, std::vector<std::string> lines)
+ServerConfig *ParseConfig::parseServer(size_t *i, std::vector<std::string> lines)
 {
     ServerConfig *conf = new ServerConfig();
     while (*i < lines.size())
@@ -125,7 +126,8 @@ void ParseConfig::parseServer(size_t *i, std::vector<std::string> lines)
             try
             {
                 std::cout << "Location detected" << std::endl;
-                this->parseRoute(i, lines);
+                Route *tmp = this->parseRoute(i, lines);
+                conf->addRoute(tmp);
             } catch (std::exception &e) {
                 delete conf;
                 std::cerr << "location : " << e.what() << std::endl;
@@ -145,8 +147,7 @@ void ParseConfig::parseServer(size_t *i, std::vector<std::string> lines)
             {
                 std::cout << "Error : " << it->first << " -> " << it->second << std::endl; 
             }
-            delete conf;
-            return ;
+            return (conf);
         }
         else
         {
@@ -159,15 +160,121 @@ void ParseConfig::parseServer(size_t *i, std::vector<std::string> lines)
     throw ParseConfig::ErrorFileContent();
 }
 
-void ParseConfig::parseRoute(size_t *i, std::vector<std::string> lines)
+Route *ParseConfig::parseRoute(size_t *i, std::vector<std::string> lines)
 {
-    Route *route = new Route();
+    std::vector<std::string> args = splitString(lines[*i], ' ');
+    cleanArgs(&args);
+    Route *route = new Route(args[1]);
+    while (++(*i) < lines.size())
+    {
+        args = splitString(lines[*i], ' ');
+        cleanArgs(&args);
+        // METHODS
+        if (args.size() >= 1 && args[0] == "methods")
+        {
+            try
+            {
+                std::cout << "Method detected" << std::endl;
+                route->addMethods(args);
+            } catch (std::exception &e) {
+                delete route;
+                route = NULL;
+                std::cerr << "methods : " << e.what() << std::endl;
+                throw ParseConfig::ErrorFileContent();
+            }
+        }
+        // RETURN -> REDIRECTION
+        else if (args.size() >= 1 && args[0] == "return")
+        {
+            try
+            {
+                std::cout << "return detected" << std::endl;
+                route->setRedir(args);
+            } catch (std::exception &e) {
+                delete route;
+                route = NULL;
+                std::cerr << "return : " << e.what() << std::endl;
+                throw ParseConfig::ErrorFileContent();
+            }
+        }
+        // ROOT
+        else if (args.size() >= 1 && args[0] == "root")
+        {
+            try
+            {
+                std::cout << "Root detected" << std::endl;
+                route->setRoot(args);
+            } catch (std::exception &e) {
+                delete route;
+                route = NULL;
+                std::cerr << "root : " << e.what() << std::endl;
+                throw ParseConfig::ErrorFileContent();
+            }
+        }
+        // AUTOINDEX
+        else if (args.size() >= 1 && args[0] == "autoindex")
+        {
+            try
+            {
+                std::cout << "Autoindex detected" << std::endl;
+                route->setAutoIndex(args);
+            } catch (std::exception &e) {
+                delete route;
+                route = NULL;
+                std::cerr << "autoindex : " << e.what() << std::endl;
+                throw ParseConfig::ErrorFileContent();
+            }
+        }
+        // INDEX
+        else if (args.size() >= 1 && args[0] == "index")
+        {
+            try
+            {
+                std::cout << "index detected" << std::endl;
+                route->setIndex(args);
+            } catch (std::exception &e) {
+                delete route;
+                route = NULL;
+                std::cerr << "index : " << e.what() << std::endl;
+                throw ParseConfig::ErrorFileContent();
+            }
+        }
+        else if (args.size() == 1 && args[0] == "}")
+        {
+            std::cout << "Config de la route " << route->getPath() << std::endl;
+            std::vector<Method> m = route->getMethods();
+            std::cout << "Methods : " << std::endl;
+            for (size_t i = 0; i < m.size(); i++)
+                std::cout << m[i] << std::endl;
+            std::cout << "Redirection : " << std::endl;
+            if (route->getRedir().exist)
+            {
+                std::cout << route->getRedir().code << std::endl;
+                std::cout << route->getRedir().path << std::endl;
+            }
+            else
+                std::cout << "no redirection" << std::endl;
+            std::cout << "Root : " << route->getRoot() << std::endl;
+            std::cout << "Autoindex : " << route->getAutoIndex() << std::endl;
+            std::cout << "Index : " << route->getIndex() << std::endl;
+            return (route);
+        }
+        else
+        {
+            delete route;
+            throw ParseConfig::ErrorFileContent();
+        }
+    }
+    delete route;
+    throw ParseConfig::ErrorFileContent();
 }
 
 ParseConfig::~ParseConfig(void)
 {
     if (this->_file.is_open())
         this->_file.close();
+    for (size_t i = 0; i < this->_configs.size(); i++)
+        delete this->_configs[i];
     std::cout << "[ParseConfig] destructor called" << std::endl;
 }
 
