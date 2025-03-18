@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 19:49:21 by glions            #+#    #+#             */
-/*   Updated: 2025/03/17 11:52:52 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/18 11:06:05 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,11 @@ std::vector<std::string> splitString(const std::string str, char sep)
     std::string value;
 
     while (std::getline(ss, value, sep))
-        values.push_back(value);
+    {
+        value.erase(std::remove(value.begin(), value.end(), '\t'), value.end());
+        if (value.size() > 0)
+            values.push_back(value);
+    }
     return (values);
 }
 
@@ -46,7 +50,7 @@ void cleanArgs(std::vector<std::string> *args)
 {
     for (std::vector<std::string>::iterator it = args->begin(); it != args->end(); ++it)
     {
-        if (it->size() == 0 || *it == "\t" || *it == "\n" || *it == "" || *it == "\r" || *it == "\v")
+        if (it->size() == 0 || *it == "\t" || *it == "\n" || *it == "" || *it == " " || *it == "\r" || *it == "\v")
             args->erase(it);
     }
 }

@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 19:49:02 by glions            #+#    #+#             */
-/*   Updated: 2025/03/11 09:32:05 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/18 09:15:53 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@
 # include <vector>
 # include <sstream>
 # include <fstream>
+# include <string>
+# include <algorithm>
 
 enum Method
 {

@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/13 09:21:24 by glions            #+#    #+#             */
-/*   Updated: 2025/03/17 16:21:05 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/18 15:46:49 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,6 +92,8 @@ void Route::setIndex(std::string index)
 
 void Route::setIndex(std::vector<std::string> args)
 {
+    if (this->_index != "")
+        throw Route::ErrorDuplicate();
     if (args.size() > 2)
         throw Route::ErrorToManyArgs();
     if (args.size() < 2)
@@ -106,6 +108,8 @@ void Route::setRoot(std::string root)
 
 void Route::setRoot(std::vector<std::string> args)
 {
+    if (this->_root != "")
+        throw Route::ErrorDuplicate();
     if (args.size() > 2)
         throw Route::ErrorToManyArgs();
     if (args.size() < 2)
@@ -136,9 +140,7 @@ bool alreadyIn(Method m, std::vector<Method> tab)
 void Route::addMethods(std::vector<std::string> args)
 {
     if (args.size() < 2)
-    {
         throw Route::ErrorNotEnoughArgs();
-    }
     for (size_t i = 1; i < args.size(); i++)
     {
         if (args[i] == "GET" && !alreadyIn(GET, this->_methods))
@@ -159,6 +161,8 @@ void Route::setRedir(t_redirection redir)
 
 void Route::setRedir(std::vector<std::string> args)
 {
+    if (this->_redir.exist == true)
+        throw Route::ErrorDuplicate();
     if (args.size() > 3)
         throw Route::ErrorToManyArgs();
     if (args.size() < 3)
@@ -220,15 +224,20 @@ t_redirection Route::getRedir(void) const
 
 const char *Route::ErrorNotEnoughArgs::what() const throw()
 {
-    return ("[!Route!] not enough args");
+    return ("not enough args");
 }
 
 const char *Route::ErrorToManyArgs::what() const throw()
 {
-    return ("[!Route!] to much args");
+    return ("to much args");
 }
 
 const char *Route::ErrorNotValidArgs::what() const throw()
 {
-    return ("[!Route!] not valid args");
+    return ("not valid args");
+}
+
+const char *Route::ErrorDuplicate::what() const throw()
+{
+    return ("duplicate rules on file");
 }

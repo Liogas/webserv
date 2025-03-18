@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/10 15:29:40 by glions            #+#    #+#             */
-/*   Updated: 2025/03/17 14:25:26 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/18 14:54:44 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,6 +59,11 @@ class ServerConfig
             virtual const char *what() const throw();
     };
     class ErrorErrorPageAlreadyIn : public std::exception
+    {
+        public:
+            virtual const char *what() const throw();
+    };
+    class ErrorDuplicate : public std::exception
     {
         public:
             virtual const char *what() const throw();

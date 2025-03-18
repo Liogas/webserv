@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/12 14:45:03 by glions            #+#    #+#             */
-/*   Updated: 2025/03/17 15:09:34 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/18 15:32:57 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,6 +79,11 @@ class Route
 		public:
 			virtual const char *what() const throw();
 	};
+	class ErrorDuplicate : public std::exception
+    {
+        public:
+            virtual const char *what() const throw();
+    };
 };
 
 #endif

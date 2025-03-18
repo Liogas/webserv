@@ -6,13 +6,18 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/11 11:04:34 by glions            #+#    #+#             */
-/*   Updated: 2025/03/17 15:15:57 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/18 15:33:48 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ServerConfig.hpp"
 
-ServerConfig::ServerConfig(void) : _serverName(), _port(), _routes()
+ServerConfig::ServerConfig(void) :
+    _serverName(),
+    _port(-1),
+    _clientMaxBody(0),
+    _errorPages(),
+    _routes()
 {
     std::cout << "[ServerConfig] created" << std::endl;
 }
@@ -63,6 +68,8 @@ void ServerConfig::setServerName(std::string name)
 
 void ServerConfig::setServerName(std::vector<std::string> args)
 {
+    if (this->_serverName != "")
+        throw ServerConfig::ErrorDuplicate();
     if (args.size() > 2)
     {
         throw ServerConfig::ErrorToManyArgs();
@@ -76,7 +83,9 @@ void ServerConfig::setServerName(std::vector<std::string> args)
 
 void ServerConfig::setPort(std::vector<std::string> args)
 {
-    if (args.size() > 2)
+    if (this->_port != -1)
+        throw ServerConfig::ErrorDuplicate();
+    else if (args.size() > 2)
         throw ServerConfig::ErrorToManyArgs();
     else if (args.size() < 2)
         throw ServerConfig::ErrorNotEnoughArgs();
@@ -118,14 +127,12 @@ void ServerConfig::addErrorPage(std::vector<std::string> args)
 
 void ServerConfig::setClientMaxBody(std::vector<std::string> args)
 {
+    if (this->_clientMaxBody != 0)
+        throw ServerConfig::ErrorDuplicate();
     if (args.size() > 2)
-    {
         throw ServerConfig::ErrorToManyArgs();
-    }
     else if (args.size() < 2)
-    {
         throw ServerConfig::ErrorNotEnoughArgs();
-    }
     if (args[1].size() == 1 && !isdigit(args[1].at(0)))
         throw ServerConfig::ErrorNotValidArgs();
     for (size_t i = 0; i < args[1].size(); i++)
@@ -190,20 +197,25 @@ std::map<int, std::string> ServerConfig::getErrorPages(void) const
 
 const char *ServerConfig::ErrorNotEnoughArgs::what() const throw()
 {
-    return ("[!ServerConfig!] not enough args");
+    return ("not enough args");
 }
 
 const char *ServerConfig::ErrorToManyArgs::what() const throw()
 {
-    return ("[!ServerConfig!] to much args");
+    return ("to much args");
 }
 
 const char *ServerConfig::ErrorNotValidArgs::what() const throw()
 {
-    return ("[!ServerConfig!] not valid args");
+    return ("not valid args");
 }
 
 const char *ServerConfig::ErrorErrorPageAlreadyIn::what() const throw()
 {
-    return ("[!ServerConfig!] error pages already present");
+    return ("error pages already present");
+}
+
+const char *ServerConfig::ErrorDuplicate::what() const throw()
+{
+    return ("duplicate rules on file");
 }

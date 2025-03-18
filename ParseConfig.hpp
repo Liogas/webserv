@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:52:16 by glions            #+#    #+#             */
-/*   Updated: 2025/03/17 15:24:47 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/18 11:14:50 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,8 +26,6 @@ class ParseConfig
         ~ParseConfig();
         ParseConfig &operator=(const ParseConfig &copy);
         std::string getPath(void) const;
-        bool getBlocServer(void) const;
-        bool getBlocRoute(void) const;
         std::vector<ServerConfig *> getConfigs(void) const;
         bool startParsing();
         ServerConfig *parseServer(size_t *i, std::vector<std::string> lines);
@@ -35,8 +33,6 @@ class ParseConfig
     private:
         std::string _path;
         std::ifstream _file;
-        bool _blocServer;
-        bool _blocRoute;
         std::vector<ServerConfig *> _configs;
 
     class ErrorFile : public std::exception

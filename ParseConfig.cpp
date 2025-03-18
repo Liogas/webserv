@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:54:05 by glions            #+#    #+#             */
-/*   Updated: 2025/03/17 16:22:22 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/18 15:34:10 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,8 +20,6 @@ ParseConfig::ParseConfig(std::string path) : _path(path), _configs()
     this->_file.open(this->_path.c_str());
     if (!this->_file.is_open())
         throw ParseConfig::ErrorFile();
-    this->_blocRoute = false;
-    this->_blocServer = false;
     std::cout << "[ParseConfig] created with " << this->_path << std::endl;
 }
 
@@ -66,7 +64,8 @@ ServerConfig *ParseConfig::parseServer(size_t *i, std::vector<std::string> lines
         cleanArgs(&args);
         for (size_t i = 0; i < args.size(); i++)
         {
-            std::cout << "args[" << i << "] = " << args[i] << std::endl;
+            std::cout << "taille de l'arg -> " << args[i].size() << std::endl;
+            std::cout << "args[" << i << "] = |" << args[i] << "|" << std::endl;
         }
         // LISTEN
         if (args.size() >= 1 && args[0] == "listen")
@@ -149,7 +148,7 @@ ServerConfig *ParseConfig::parseServer(size_t *i, std::vector<std::string> lines
             }
             return (conf);
         }
-        else
+        else if (args.size() != 0)
         {
             delete conf;
             throw ParseConfig::ErrorFileContent();
@@ -174,7 +173,6 @@ Route *ParseConfig::parseRoute(size_t *i, std::vector<std::string> lines)
         {
             try
             {
-                std::cout << "Method detected" << std::endl;
                 route->addMethods(args);
             } catch (std::exception &e) {
                 delete route;
@@ -188,7 +186,6 @@ Route *ParseConfig::parseRoute(size_t *i, std::vector<std::string> lines)
         {
             try
             {
-                std::cout << "return detected" << std::endl;
                 route->setRedir(args);
             } catch (std::exception &e) {
                 delete route;
@@ -202,7 +199,6 @@ Route *ParseConfig::parseRoute(size_t *i, std::vector<std::string> lines)
         {
             try
             {
-                std::cout << "Root detected" << std::endl;
                 route->setRoot(args);
             } catch (std::exception &e) {
                 delete route;
@@ -216,7 +212,6 @@ Route *ParseConfig::parseRoute(size_t *i, std::vector<std::string> lines)
         {
             try
             {
-                std::cout << "Autoindex detected" << std::endl;
                 route->setAutoIndex(args);
             } catch (std::exception &e) {
                 delete route;
@@ -230,7 +225,6 @@ Route *ParseConfig::parseRoute(size_t *i, std::vector<std::string> lines)
         {
             try
             {
-                std::cout << "index detected" << std::endl;
                 route->setIndex(args);
             } catch (std::exception &e) {
                 delete route;
@@ -259,7 +253,7 @@ Route *ParseConfig::parseRoute(size_t *i, std::vector<std::string> lines)
             std::cout << "Index : " << route->getIndex() << std::endl;
             return (route);
         }
-        else
+        else if (args.size() != 0)
         {
             delete route;
             throw ParseConfig::ErrorFileContent();
@@ -282,8 +276,6 @@ ParseConfig &ParseConfig::operator=(const ParseConfig &copy)
 {
     if (this != &copy)
     {
-        this->_blocRoute = copy.getBlocRoute();
-        this->_blocServer = copy.getBlocServer();
     }
     return (*this);
 }
@@ -291,16 +283,6 @@ ParseConfig &ParseConfig::operator=(const ParseConfig &copy)
 std::vector<ServerConfig *> ParseConfig::getConfigs(void) const
 {
     return (this->_configs);
-}
-
-bool ParseConfig::getBlocRoute(void) const
-{
-    return (this->_blocRoute);
-}
-
-bool ParseConfig::getBlocServer(void) const
-{
-    return (this->_blocServer);
 }
 
 std::string ParseConfig::getPath(void) const
