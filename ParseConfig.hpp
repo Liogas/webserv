@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:52:16 by glions            #+#    #+#             */
-/*   Updated: 2025/03/18 11:14:50 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/19 11:30:07 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@ class ParseConfig
         bool startParsing();
         ServerConfig *parseServer(size_t *i, std::vector<std::string> lines);
         Route *parseRoute(size_t *i, std::vector<std::string> lines);
+        ServerConfig *extractConfig(size_t pos);
     private:
         std::string _path;
         std::ifstream _file;

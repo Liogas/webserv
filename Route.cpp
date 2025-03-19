@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/13 09:21:24 by glions            #+#    #+#             */
-/*   Updated: 2025/03/18 15:46:49 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/19 13:39:58 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,8 +17,8 @@ Route::Route(void):
     _root(),
     _index(),
     _bodysize(),
+    _autoindex(2),
     _methods(),
-    _error_pages(),
     _redir()
 {
     this->_redir.exist = false;
@@ -30,8 +30,8 @@ Route::Route(std::string path):
     _root(),
     _index(),
     _bodysize(),
+    _autoindex(2),
     _methods(),
-    _error_pages(),
     _redir()
 {
     this->_redir.exist = false;
@@ -43,10 +43,12 @@ Route::Route(const Route &copy):
     _root(copy.getRoot()),
     _index(copy.getIndex()),
     _bodysize(copy.getBodySize()),
-    _methods(copy.getMethods()),
-    _error_pages(copy.getErrorPages()),
+    _autoindex(copy.getAutoIndex()),
     _redir(copy.getRedir())
 {
+    std::vector<Method> methods = copy.getMethods();
+    for (size_t i = 0; i < methods.size(); i++)
+        this->_methods.push_back(methods[i]);
     std::cout << "[Route] copy constructor called" << std::endl;
 }
 
@@ -55,22 +57,42 @@ Route::~Route()
     std::cout << "[Route] destroyed" << std::endl;
 }
 
+void Route::print(void)
+{   
+    std::cout << "Route " << this->_path << std::endl;
+    std::cout << "Root : " << this->_root << std::endl;
+    std::cout << "Index : " << this->_index << std::endl;
+    std::cout << "Body size : " << this->_bodysize << std::endl;
+    std::cout << "Autoindex : " << this->_autoindex << std::endl;
+    std::cout << "Methods : ";
+    for (size_t i = 0; i < this->_methods.size(); i++)
+        std::cout << this->_methods[i] << " ";
+    std::cout << std::endl;
+    std::cout << "Redirection : ";
+    if (!this->_redir.exist)
+        std::cout << "empty";
+    else
+        std::cout << "code=" << this->_redir.code << " path=" << this->_redir.path << std::endl;
+}
+
 // SETTERS
-void Route::setAutoIndex(bool value)
+void Route::setAutoIndex(int value)
 {
     this->_autoindex = value;
 }
 
 void Route::setAutoIndex(std::vector<std::string> args)
 {
+    if (this->_autoindex != 2)
+        throw Route::ErrorDuplicate();
     if (args.size() > 2)
         throw Route::ErrorToManyArgs();
     if (args.size() < 2)
         throw Route::ErrorNotEnoughArgs();
     if (args[1] == "on")
-        this->_autoindex = true;
+        this->_autoindex = 1;
     else if (args[1] == "off")
-        this->_autoindex = false;
+        this->_autoindex = 0;
     else
         throw Route::ErrorNotValidArgs();
 }
@@ -117,11 +139,6 @@ void Route::setRoot(std::vector<std::string> args)
     this->_root = args[1];
 }
 
-void Route::addErrorPage(int error, std::string path)
-{
-    this->_error_pages[error] = path;
-}
-
 void Route::addMethod(Method m)
 {
     this->_methods.push_back(m);
@@ -139,6 +156,8 @@ bool alreadyIn(Method m, std::vector<Method> tab)
 
 void Route::addMethods(std::vector<std::string> args)
 {
+    if (this->_methods.size() != 0)
+        throw Route::ErrorDuplicate();
     if (args.size() < 2)
         throw Route::ErrorNotEnoughArgs();
     for (size_t i = 1; i < args.size(); i++)
@@ -202,7 +221,7 @@ int Route::getBodySize(void) const
     return (this->_bodysize);
 }
 
-bool Route::getAutoIndex(void) const
+int Route::getAutoIndex(void) const
 {
     return (this->_autoindex);
 }
@@ -210,11 +229,6 @@ bool Route::getAutoIndex(void) const
 std::vector<Method> Route::getMethods(void) const
 {
     return (this->_methods);
-}
-
-std::map<int, std::string> Route::getErrorPages(void) const
-{
-    return (this->_error_pages);
 }
 
 t_redirection Route::getRedir(void) const

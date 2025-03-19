@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/11 11:04:34 by glions            #+#    #+#             */
-/*   Updated: 2025/03/18 15:33:48 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/19 13:20:19 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,16 +26,17 @@ ServerConfig::ServerConfig(ServerConfig const &copy):
     _serverName(copy.getServerName()),
     _port(copy.getPort()),
     _clientMaxBody(copy.getClientMaxBody()),
-    _errorPages(copy.getErrorPages()),
     _routes()
 {
-    std::map<std::string, Route *> tmp;
+    std::cout << "[ServerConfig] copy constructor called" << std::endl;
+    std::map<std::string, Route *> tmp = copy.getRoutes();
     for (std::map<std::string, Route *>::iterator it = tmp.begin();
         it != tmp.end(); it++)
-    {
-        Route *tmp = new Route(*(it->second));
-        this->_routes[it->first] = tmp;
-    }
+        this->_routes[it->first] = new Route(*(it->second));
+    std::map<int, std::string> tmp2 = copy.getErrorPages();
+    for(std::map<int, std::string>::iterator it = tmp2.begin();
+        it != tmp2.end(); ++it)
+        this->_errorPages[it->first] = it->second;
 }
 
 ServerConfig::~ServerConfig()
@@ -55,10 +56,34 @@ ServerConfig &ServerConfig::operator=(const ServerConfig &copy)
     {
         this->_port = copy.getPort();
         this->_serverName = copy.getServerName();
-        this->_routes = copy.getRoutes();
         this->_clientMaxBody = copy.getClientMaxBody();
+        std::map<std::string, Route *> tmp = copy.getRoutes();
+        for (std::map<std::string, Route *>::iterator it = tmp.begin();
+            it != tmp.end(); it++)
+            this->_routes[it->first] = new Route(*(it->second));
+        std::map<int, std::string> tmp2 = copy.getErrorPages();
+        for(std::map<int, std::string>::iterator it = tmp2.begin();
+            it != tmp2.end(); ++it)
+            this->_errorPages[it->first] = it->second;
     }
     return (*this);
+}
+
+void ServerConfig::print(void)
+{
+    std::cout << "Configs : " << std::endl;
+    std::cout << "Server name : " << this->_serverName << std::endl;
+    std::cout << "Port : " << this->_port << std::endl;
+    std::cout << "Client max body : " << this->_clientMaxBody << std::endl;
+    std::cout << "Errors pages : " << std::endl;
+    for (std::map<int, std::string>::iterator it = this->_errorPages.begin();
+        it != this->_errorPages.end(); ++it)
+        std::cout << "Code : " << it->first << " -> " << it->second << std::endl;
+    std::cout << "Routes : " << std::endl;
+    std::cout << "size : " << this->_routes.size() << std::endl;
+    for (std::map<std::string, Route *>::iterator it = this->_routes.begin();
+        it != this->_routes.end(); ++it)
+        it->second->print();
 }
 
 void ServerConfig::setServerName(std::string name)

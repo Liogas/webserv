@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:54:05 by glions            #+#    #+#             */
-/*   Updated: 2025/03/18 15:34:10 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/19 11:31:47 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,13 +42,13 @@ bool ParseConfig::startParsing(void)
             }
             catch (std::exception &e)
             {
-                std::cerr << e.what();
+                std::cerr << e.what() << std::endl;
                 return (false);
             }
         }
         else if (args.size() != 0)
         {
-            std::cerr << "[!ParseConfig!] bad value on file" << std::endl;
+            std::cerr << "bad value on file" << std::endl;
             return (false);
         }
     }
@@ -62,11 +62,6 @@ ServerConfig *ParseConfig::parseServer(size_t *i, std::vector<std::string> lines
     {
         std::vector<std::string> args = splitString(lines[*i], ' ');
         cleanArgs(&args);
-        for (size_t i = 0; i < args.size(); i++)
-        {
-            std::cout << "taille de l'arg -> " << args[i].size() << std::endl;
-            std::cout << "args[" << i << "] = |" << args[i] << "|" << std::endl;
-        }
         // LISTEN
         if (args.size() >= 1 && args[0] == "listen")
         {
@@ -133,21 +128,9 @@ ServerConfig *ParseConfig::parseServer(size_t *i, std::vector<std::string> lines
                 throw ParseConfig::ErrorFileContent();
             }
         }
+        // END OF BLOC SERVER
         else if (args.size() == 1 && args[0] == "}")
-        {
-            std::cout << "Config de mon server : " << std::endl;
-            std::cout << "Port : " << conf->getPort() << std::endl;
-            std::cout << "Server_name : " << conf->getServerName() << std::endl;
-            std::cout << "Size max body : " << conf->getClientMaxBody() << std::endl;
-            std::cout << "Error pages : " << std::endl;
-            std::map<int, std::string> tmp = conf->getErrorPages();
-            for (std::map<int, std::string>::iterator it = tmp.begin();
-                it != tmp.end(); ++it)
-            {
-                std::cout << "Error : " << it->first << " -> " << it->second << std::endl; 
-            }
             return (conf);
-        }
         else if (args.size() != 0)
         {
             delete conf;
@@ -233,24 +216,11 @@ Route *ParseConfig::parseRoute(size_t *i, std::vector<std::string> lines)
                 throw ParseConfig::ErrorFileContent();
             }
         }
+        // END OF BLOC ROUTE
         else if (args.size() == 1 && args[0] == "}")
         {
-            std::cout << "Config de la route " << route->getPath() << std::endl;
-            std::vector<Method> m = route->getMethods();
-            std::cout << "Methods : " << std::endl;
-            for (size_t i = 0; i < m.size(); i++)
-                std::cout << m[i] << std::endl;
-            std::cout << "Redirection : " << std::endl;
-            if (route->getRedir().exist)
-            {
-                std::cout << route->getRedir().code << std::endl;
-                std::cout << route->getRedir().path << std::endl;
-            }
-            else
-                std::cout << "no redirection" << std::endl;
-            std::cout << "Root : " << route->getRoot() << std::endl;
-            std::cout << "Autoindex : " << route->getAutoIndex() << std::endl;
-            std::cout << "Index : " << route->getIndex() << std::endl;
+            if (route->getAutoIndex() == 2)
+                route->setAutoIndex(0);
             return (route);
         }
         else if (args.size() != 0)
@@ -268,7 +238,10 @@ ParseConfig::~ParseConfig(void)
     if (this->_file.is_open())
         this->_file.close();
     for (size_t i = 0; i < this->_configs.size(); i++)
-        delete this->_configs[i];
+    {
+        if (this->_configs[i])
+            delete this->_configs[i];
+    }
     std::cout << "[ParseConfig] destructor called" << std::endl;
 }
 
@@ -278,6 +251,13 @@ ParseConfig &ParseConfig::operator=(const ParseConfig &copy)
     {
     }
     return (*this);
+}
+
+ServerConfig *ParseConfig::extractConfig(size_t pos)
+{
+    ServerConfig *tmp = this->_configs[pos];
+    this->_configs[pos] = NULL;
+    return (tmp);
 }
 
 std::vector<ServerConfig *> ParseConfig::getConfigs(void) const
@@ -292,20 +272,20 @@ std::string ParseConfig::getPath(void) const
 
 const char *ParseConfig::ErrorFileExtension::what() const throw()
 {
-    return ("[!ParseConfig!] extension not valid");
+    return ("extension not valid");
 }
 
 const char *ParseConfig::ErrorFile::what() const throw()
 {
-    return ("[!ParseConfig!] file not found");
+    return ("file not found");
 }
 
 const char *ParseConfig::ErrorFileContent::what() const throw()
 {
-    return ("[!ParseConfig!] bad value on file");
+    return ("bad value on file");
 }
 
 const char *ParseConfig::ErrorFileEmpty::what() const throw()
 {
-    return ("[!ParseConfig!] file is empty");
+    return ("file is empty");
 }

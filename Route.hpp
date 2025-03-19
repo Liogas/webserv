@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/12 14:45:03 by glions            #+#    #+#             */
-/*   Updated: 2025/03/18 15:32:57 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/19 11:01:07 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@ class Route
 		Route(const Route &copy);
 		~Route();
 		Route &operator=(const Route &copy);
+		void print(void);
 		// SETTERS
 		void setPath(std::string path);
 		void setRoot(std::string root);
@@ -38,11 +39,10 @@ class Route
 		void setIndex(std::string index);
 		void setIndex(std::vector<std::string> args);
 		void setBodySize(int size);
-		void setAutoIndex(bool value);
+		void setAutoIndex(int value);
 		void setAutoIndex(std::vector<std::string> args);
 		void addMethod(Method m);
 		void addMethods(std::vector<std::string> args);
-		void addErrorPage(int key, std::string path);
 		void setRedir(t_redirection redir);
 		void setRedir(std::vector<std::string> args);
 		// GETTERS
@@ -50,9 +50,8 @@ class Route
 		std::string getRoot(void) const;
 		std::string getIndex(void) const;
 		int getBodySize(void) const;
-		bool getAutoIndex(void) const;
+		int getAutoIndex(void) const;
 		std::vector<Method> getMethods(void) const;
-		std::map<int, std::string> getErrorPages(void) const;
 		t_redirection getRedir(void) const;
 
 	private:
@@ -60,9 +59,8 @@ class Route
 		std::string _root;
 		std::string _index;
 		int _bodysize;
-		bool _autoindex;
+		int _autoindex;
 		std::vector<Method> _methods;
-		std::map<int, std::string> _error_pages;
 		t_redirection _redir;
 	class ErrorToManyArgs : public std::exception
 	{

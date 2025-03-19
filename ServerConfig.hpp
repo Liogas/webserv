@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/10 15:29:40 by glions            #+#    #+#             */
-/*   Updated: 2025/03/18 14:54:44 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/19 10:58:26 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@ class ServerConfig
         ServerConfig(ServerConfig const &copy);
         ~ServerConfig();
         ServerConfig &operator=(const ServerConfig &copy);
+        void print(void);
         // SETTERS
         void setServerName(std::string name);
         void setServerName(std::vector<std::string> args);

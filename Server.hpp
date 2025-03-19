@@ -13,6 +13,7 @@
 
 # include "Request.hpp"
 # include "Client.hpp"
+# include "ServerConfig.hpp"
 
 /*
     Idees :
@@ -26,18 +27,22 @@ class Server
 {
     public:
         Server(void);
+        Server(ServerConfig *config);
         ~Server();
-        void bindSocket(sa_family_t family, in_addr_t s_addr, int port);
-        void ready(void);
-        void start(void);
-        void acceptClient(void);
-        void handleClient(int client_fd);
-        int getEpollFd(void);
+        bool init(void);
+        void print(void);
+        void bindSocket(int maxClient);
+        int getFd(void) const;
+        bool newClient(void);
+        std::map<int, Client *> getClients(void) const;
+        int getEpollFd(void) const;
+        void setEpollFd(int fd);
     private:
         int _fd;
         int _epollFd;
         bool _running;
         struct sockaddr_in _address;
+        ServerConfig *_config;
         std::map<int, Client*> _clients;
 
     class ErrorSocket : public std::exception
