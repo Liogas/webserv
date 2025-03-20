@@ -6,13 +6,14 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/03/19 16:05:51 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/20 13:27:11 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
 # define MAX_CLIENTS 5
+# define BUFFER_SIZE 1024
 
 Webserv::Webserv() :
     _servers(),
@@ -99,7 +100,7 @@ bool Webserv::start(void)
     while (1)
     {
         struct epoll_event events[10];
-        int nfds = epoll_wait(this->_epollFd, events, MAX_CLIENTS, 0);
+        int nfds = epoll_wait(this->_epollFd, events, MAX_CLIENTS, -1);
         if (nfds == -1)
         {
             perror("epoll_wait");
@@ -113,23 +114,56 @@ bool Webserv::start(void)
                 if (this->_servers[j]->getFd() == events[i].data.fd)
                 {
                     mode = 1;
+                    std::cout << "SERVER EN ATTENTE D'AJOUT DU CLIENT : " << this->_servers[j]->getFd() << std::endl;
                     if (!this->_servers[j]->newClient())
                         break;
                 }
             }
             if (mode == 0)
             {
-                Server *serv = this->whereIsClient(events[i].data.fd);
-                if (!serv)
-                {
-                    std::cout << "client " << events[i].data.fd
-                        << " unknown" << std::endl;
-                    continue ;
-                }
-                std::cout << "Le client se trouve sur le server " << serv->getFd() << std::endl;
+                this->handleClient(events[i].data.fd);
             }
         }
     }
+    return (true);
+}
+
+bool Webserv::handleClient(int clientFd)
+{
+    std::cout << "Entree dans handle client avec : " << clientFd << std::endl;
+    Server *serv = this->whereIsClient(clientFd);
+    if (!serv)
+    {
+        std::cout << "client " << clientFd
+            << " unknown" << std::endl;
+        return (false);
+    }
+    std::cout << "Le client se trouve sur le server " << serv->getFd() << std::endl;
+    std::map<int, Client *> clients = serv->getClients();
+    std::map<int, Client *>::iterator it = clients.find(clientFd);
+    if (it == serv->getClients().end())
+    {
+        std::cerr << "ERREUR REALLY STRANGE" << std::endl;
+        return (false);
+    }
+    Client *client = it->second;
+    std::cout << "Je suis le client " << client->getFd() << std::endl;
+    char buffer[BUFFER_SIZE] = {0};
+    ssize_t bytes_read = recv(clientFd, buffer, sizeof(buffer) -1, MSG_DONTWAIT);
+    buffer[bytes_read] = '\0';
+    if (bytes_read == 0)
+    {
+        client->disconnect();
+        serv->getClients().erase(it);
+        delete client;
+        return (false);
+    }
+    else if (bytes_read < 0)
+    {
+        perror("recv");
+        return (false);
+    }
+    std::cout << buffer << std::endl;
     return (true);
 }
 
@@ -137,6 +171,7 @@ Server *Webserv::whereIsClient(int clientFd)
 {
     for (size_t i = 0; i < this->_servers.size(); i++)
     {
+        std::cout << "Je cherche dans le server -> " << this->_servers[i]->getFd() << std::endl;
         if (this->_servers[i]->getClients().find(clientFd) != this->_servers[i]->getClients().end())
             return (this->_servers[i]);
     }

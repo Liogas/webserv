@@ -13,6 +13,7 @@ class Client
         Request readRequest(void);
         void sendResponse(std::string response);
         void disconnect();
+        int getFd(void) const;
     private:
         Server &_serv;
         int _fd;

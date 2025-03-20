@@ -39,6 +39,11 @@ void Client::sendResponse(std::string response)
     send(this->_fd, response.c_str(), response.size(), 0);
 }
 
+int Client::getFd(void) const
+{
+    return (this->_fd);
+}
+
 const char *Client::ErrorClient::what() const throw()
 {
     return ("Error on constructor Client");

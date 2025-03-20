@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:24:10 by glions            #+#    #+#             */
-/*   Updated: 2025/03/19 15:33:37 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/20 10:58:35 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ class Webserv
         bool bindServers(void);
         bool ready(void);
         bool start(void);
+        bool handleClient(int clientFd);
         Server *whereIsClient(int fdClient);
         std::vector<Server *> getServers() const;
         int getEpollfd(void) const;
