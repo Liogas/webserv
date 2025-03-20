@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/12 14:45:03 by glions            #+#    #+#             */
-/*   Updated: 2025/03/19 11:01:07 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/20 16:00:39 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,6 @@ class Route
 		Route(std::string path);
 		Route(const Route &copy);
 		~Route();
-		Route &operator=(const Route &copy);
 		void print(void);
 		// SETTERS
 		void setPath(std::string path);

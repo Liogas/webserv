@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:54:05 by glions            #+#    #+#             */
-/*   Updated: 2025/03/19 11:31:47 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/20 15:55:43 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,9 +20,34 @@ ParseConfig::ParseConfig(std::string path) : _path(path), _configs()
     this->_file.open(this->_path.c_str());
     if (!this->_file.is_open())
         throw ParseConfig::ErrorFile();
-    std::cout << "[ParseConfig] created with " << this->_path << std::endl;
 }
 
+ParseConfig::~ParseConfig(void)
+{
+    if (this->_file.is_open())
+        this->_file.close();
+    for (size_t i = 0; i < this->_configs.size(); i++)
+    {
+        if (this->_configs[i])
+            delete this->_configs[i];
+    }
+}
+
+ParseConfig &ParseConfig::operator=(const ParseConfig &copy)
+{
+    if (this != &copy)
+    {
+    }
+    return (*this);
+}
+
+/*
+    Methode qui lance parsing.
+    Lit le contenu present dans le fichier de configuration, puis parcoure les lignes.
+    Son role est de chercher une ligne "server {" afin de commencer le parsing pour un
+    serveur. Une fois parsingServer fait on recupere l'objet ServerConfig qui a ete creer
+    pour l'ajouter au vector _configs.
+*/
 bool ParseConfig::startParsing(void)
 {
     std::vector<std::string> contentFile = readFile(this->_file);
@@ -55,6 +80,16 @@ bool ParseConfig::startParsing(void)
     return (true);
 }
 
+/*
+    Methode qui s'occupe du parsing d'un bloc "server {}", retourne un objet ServerConfig.
+    Les lignes acceptees sont :
+    - "listen arg" -> definit le port
+    - "server_name arg" -> definir le nom de domaine
+    - "error_pages code path" -> Ajoute une page d'erreur pour le code donne
+    - "client_max_body value" -> definit la taille maximum d'un body envoye par le client
+    - "location path {" -> Demarre le parsing d'une route
+    - "}" -> Fin du bloc "server {}"
+*/
 ServerConfig *ParseConfig::parseServer(size_t *i, std::vector<std::string> lines)
 {
     ServerConfig *conf = new ServerConfig();
@@ -67,7 +102,6 @@ ServerConfig *ParseConfig::parseServer(size_t *i, std::vector<std::string> lines
         {
             try
             {
-                std::cout << "Listen detected" << std::endl;
                 conf->setPort(args);
             } catch (std::exception &e) {
                 delete conf;
@@ -80,7 +114,6 @@ ServerConfig *ParseConfig::parseServer(size_t *i, std::vector<std::string> lines
         {
             try
             {
-                std::cout << "Server name detected" << std::endl;
                 conf->setServerName(args);
             } catch (std::exception &e) {
                 delete conf;
@@ -93,7 +126,6 @@ ServerConfig *ParseConfig::parseServer(size_t *i, std::vector<std::string> lines
         {
             try
             {
-                std::cout << "Error_page detected" << std::endl;
                 conf->addErrorPage(args);
             } catch(const std::exception& e) {
                 delete conf;
@@ -106,7 +138,6 @@ ServerConfig *ParseConfig::parseServer(size_t *i, std::vector<std::string> lines
         {
             try
             {
-                std::cout << "Client max body detected" << std::endl;
                 conf->setClientMaxBody(args);
             } catch (std::exception &e) {
                 delete conf;
@@ -119,7 +150,6 @@ ServerConfig *ParseConfig::parseServer(size_t *i, std::vector<std::string> lines
         {
             try
             {
-                std::cout << "Location detected" << std::endl;
                 Route *tmp = this->parseRoute(i, lines);
                 conf->addRoute(tmp);
             } catch (std::exception &e) {
@@ -142,6 +172,16 @@ ServerConfig *ParseConfig::parseServer(size_t *i, std::vector<std::string> lines
     throw ParseConfig::ErrorFileContent();
 }
 
+/*
+    Methode qui s'occupe du parsing du bloc "location arg {}", retourne un objet Route
+    Les lignes acceptees sont :
+    - "methods" : definit les methodes acceptees pour cette route
+    - "return code path" : redirige cette route vers une autre requete avec un code precis
+    - "root path" -> definit le repertoire de travail de la route
+    - "autoindex on/off" -> definit s'il faut lister ou non le contenu du repertoire
+    - "index path" -> definit le fichier par defaut a afficher
+    - "}" -> Fin du bloc "location path {}"
+*/
 Route *ParseConfig::parseRoute(size_t *i, std::vector<std::string> lines)
 {
     std::vector<std::string> args = splitString(lines[*i], ' ');
@@ -233,33 +273,8 @@ Route *ParseConfig::parseRoute(size_t *i, std::vector<std::string> lines)
     throw ParseConfig::ErrorFileContent();
 }
 
-ParseConfig::~ParseConfig(void)
-{
-    if (this->_file.is_open())
-        this->_file.close();
-    for (size_t i = 0; i < this->_configs.size(); i++)
-    {
-        if (this->_configs[i])
-            delete this->_configs[i];
-    }
-    std::cout << "[ParseConfig] destructor called" << std::endl;
-}
 
-ParseConfig &ParseConfig::operator=(const ParseConfig &copy)
-{
-    if (this != &copy)
-    {
-    }
-    return (*this);
-}
-
-ServerConfig *ParseConfig::extractConfig(size_t pos)
-{
-    ServerConfig *tmp = this->_configs[pos];
-    this->_configs[pos] = NULL;
-    return (tmp);
-}
-
+// GETTERS
 std::vector<ServerConfig *> ParseConfig::getConfigs(void) const
 {
     return (this->_configs);
@@ -270,6 +285,8 @@ std::string ParseConfig::getPath(void) const
     return (this->_path);
 }
 
+
+// EXCEPTIONS
 const char *ParseConfig::ErrorFileExtension::what() const throw()
 {
     return ("extension not valid");

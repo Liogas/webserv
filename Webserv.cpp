@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/03/20 14:28:21 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/20 15:30:48 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,14 +19,6 @@ Webserv::Webserv() :
     _servers(),
     _epollFd(-1)
 {
-    std::cout << "[Webserv] created" << std::endl;
-}
-
-Webserv::Webserv(Webserv const & copy) :
-    _servers(copy.getServers()),
-    _epollFd(-1)
-{
-    std::cout << "[Webserv] copy constructor called" << std::endl;
 }
 
 Webserv::~Webserv(void)
@@ -35,9 +27,14 @@ Webserv::~Webserv(void)
         delete this->_servers[i];
     if (this->_epollFd != -1)
         close(this->_epollFd);
-    std::cout << "[Webserv] destroyed" << std::endl;
 }
 
+/*
+    Methode qui gert le parsing en creant un objet de la classe ParseConfig.
+    Une fois le parsing fait s'il y a pas eu d'erreurs, les serveurs sont creer
+    avec les objets ServerConfig presents dans l'objet ParseConfig puis ajouter
+    dans le vector _servers.
+*/
 bool Webserv::parsing(std::string file_path)
 {
     try
@@ -58,6 +55,10 @@ bool Webserv::parsing(std::string file_path)
     return (true);
 }
 
+
+/*
+    Methode qui s'occupe du bind et du listen pour les differents serveurs crees.
+*/
 bool Webserv::bindServers(void)
 {
     try
@@ -71,6 +72,12 @@ bool Webserv::bindServers(void)
     return (true);
 }
 
+/*
+    Methode qui creer le gestionnaire d'evenements (epoll). Elle ajoute dedans les
+    differents serveurs lances.
+
+    ! Doit etre lance apres bindServers() !
+*/
 bool Webserv::ready(void)
 {
     this->_epollFd = epoll_create1(0);
@@ -95,6 +102,17 @@ bool Webserv::ready(void)
     return (true);
 }
 
+/*
+    Methode qui fait tourner avec une boucle infini les differents serveurs.
+    C'est ici qu'on detecte lorsque le serveur recoit un evenement grace a epoll_wait.
+    Apres on recupere events[i].data.fd qui permet de savoir qui a declencher l'evenement.
+    
+    - Si FD correspond a un serveur ca veut dire que c'est un nouveau client qui veut
+    se connecter au serveur. Dans ce cas on appel newClient dans lequel on utilise la
+    fonction accept()
+    - Sinon c'est un client deja present sur un serveur et on appelle la method
+    handleClient.
+*/
 bool Webserv::start(void)
 {
     while (1)
@@ -114,60 +132,72 @@ bool Webserv::start(void)
                 if (this->_servers[j]->getFd() == events[i].data.fd)
                 {
                     mode = 1;
-                    std::cout << "SERVER EN ATTENTE D'AJOUT DU CLIENT : " << this->_servers[j]->getFd() << std::endl;
                     if (!this->_servers[j]->newClient())
                         break;
                 }
             }
             if (mode == 0)
-            {
                 this->handleClient(events[i].data.fd);
-            }
         }
     }
     return (true);
 }
 
+/*
+    Methode utile pour gerer un evenement provenant d'un client.
+    Dans un premier on cherche le serveur sur lequel il se trouve.
+    Ensuite on recupere la requete envoye par le client avec recv.
+    - Si bytes_read = 0 le client s'est deconnecte du serveur
+    - Si < 0 erreur lors de l'appel de recv
+    - Sinon recv s'est bien passe et la requete stockee dans le buffer.
+    Ensuite il faudra appeler la fonction de Loreen avec le client, le buffer et
+    le serveur en parametre.
+*/
 bool Webserv::handleClient(int clientFd)
 {
-    std::cout << "Entree dans handle client avec : " << clientFd << std::endl;
     Server *serv = this->whereIsClient(clientFd);
     if (!serv)
     {
-        std::cout << "client " << clientFd
+        std::cerr << "client " << clientFd
             << " unknown" << std::endl;
         return (false);
     }
-    std::cout << "Le client se trouve sur le server " << serv->getFd() << std::endl;
     std::map<int, Client *> clients = serv->getClients();
     std::map<int, Client *>::iterator it = clients.find(clientFd);
     if (it == clients.end())
     {
-        std::cerr << "ERREUR REALLY STRANGE" << std::endl;
+        std::cerr << "ERROR REALLY STRANGE" << std::endl;
         return (false);
     }
     Client *client = it->second;
-    std::cout << "Je suis le client " << client->getFd() << std::endl;
     char buffer[BUFFER_SIZE] = {0};
     ssize_t bytes_read = recv(clientFd, buffer, sizeof(buffer) -1, MSG_DONTWAIT);
     buffer[bytes_read] = '\0';
+    // CLIENT DISCONNECT
     if (bytes_read == 0)
     {
-        std::cout << "Client " << it->first << " se deconnecte" << std::endl;
         serv->eraseClient(it->first);
         client->disconnect();
         delete client;
         return (true);
     }
+    // ERROR RECV
     else if (bytes_read < 0)
     {
         perror("recv");
         return (false);
     }
+    // BUFFER READED
     std::cout << buffer << std::endl;
+    // FONCTION_LOLO(buffer, serv, client);
     return (true);
 }
 
+/*
+    Methode qui prend le fd du client recherche en parametre.
+    Parcourt les serveurs puis cherche dans chacun d'entre eux si le client est
+    present puis retourne le serveur si c'est le cas.
+*/
 Server *Webserv::whereIsClient(int clientFd)
 {
     for (size_t i = 0; i < this->_servers.size(); i++)

@@ -10,9 +10,8 @@ class Client
     public:
         Client(int fd, Server &serv);
         ~Client();
-        Request readRequest(void);
-        void sendResponse(std::string response);
         void disconnect();
+        // GETTERS
         int getFd(void) const;
     private:
         Server &_serv;

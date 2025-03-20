@@ -18,27 +18,6 @@ Server::Server(ServerConfig *config) :
     std::cout << "[Server " << this->_fd << "] created" << std::endl;
 }
 
-bool Server::init(void)
-{
-    this->_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    fcntl(this->_fd, F_SETFL, O_NONBLOCK);
-    if (this->_fd == -1)
-    {
-        perror("socket");
-        return false;
-    }
-    int reuse = 1;
-    setsockopt(this->_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
-    return (true);
-}
-
-void Server::print(void)
-{
-    std::cout << "FD : " << this->_fd << std::endl;
-    std::cout << "Running : " << this->_running << std::endl;
-    this->_config->print();
-}
-
 Server::~Server(void)
 {
     if (this->_clients.size() > 0)
@@ -60,6 +39,34 @@ Server::~Server(void)
     std::cout << "[Server " << this->_fd << "] closed" << std::endl;
 }
 
+/*
+    Methode qui genere le fd du serveur avec socket. Fcntl est utile pour le rendre
+    non bloquant.
+    setsockopt c'est pour pouvoir relancer un serveur sur le meme port je crois, c'est
+    utile pour ne pas avoir a attendre avant de relancer le programme. Sinon on avait
+    une erreur "bind: adress already use" ou truc dans le genre. Faudra peut etre la
+    retirer a la fin.
+*/
+bool Server::init(void)
+{
+    this->_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    fcntl(this->_fd, F_SETFL, O_NONBLOCK);
+    if (this->_fd == -1)
+    {
+        perror("socket");
+        return false;
+    }
+    int reuse = 1;
+    setsockopt(this->_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+    return (true);
+}
+
+/*
+    Methode qui s'occupe du bind et du listen pour le serveur.
+    AF_INET -> On utilise le protocole IPv4
+    INADDR_ANY -> On accepte toutes les adresses IP
+    htons() -> convertit notre port qui est un int en format reseau (big endian)
+*/
 void Server::bindSocket(int maxClient)
 {
     this->_address.sin_family = AF_INET;
@@ -81,6 +88,14 @@ void Server::bindSocket(int maxClient)
         << ntohs(this->_address.sin_port) << std::endl;
 }
 
+/*
+    Methode qui permet d'ajouter un client au serveur.
+    Accept va gerener le socket de ce client (revoir les parametres, je sais pas si 
+    c'est bien de mettre NULL)
+    fcntl met le socket en non bloquant.
+    Apres ces etapes on creer un objet Client que l'on ajoute a la map clients du
+    serveur (avec pour cle le fd du client).
+*/
 bool Server::newClient(void)
 {
     int client_fd = accept(this->_fd, NULL, NULL);
@@ -103,6 +118,9 @@ bool Server::newClient(void)
     return (true);
 }
 
+/*
+    Methode qui retire un client de la map clients s'il est trouve.
+*/
 void Server::eraseClient(int clientFd)
 {
     if (this->_clients.find(clientFd) != this->_clients.end())
@@ -111,11 +129,20 @@ void Server::eraseClient(int clientFd)
         std::cerr << "eraseClient : Client unknown" << std::endl;
 }
 
+void Server::print(void)
+{
+    std::cout << "FD : " << this->_fd << std::endl;
+    std::cout << "Running : " << this->_running << std::endl;
+    this->_config->print();
+}
+
+// SETTERS
 void Server::setEpollFd(int fd)
 {
     this->_epollFd = fd;
 }
 
+// GETTERS
 int Server::getFd(void) const
 {
     return (this->_fd);
@@ -131,6 +158,7 @@ std::map<int, Client *> Server::getClients(void) const
     return (this->_clients);
 }
 
+// EXCEPTIONS
 const char *Server::ErrorSocket::what() const throw()
 {
     return ("Error creation socket on Server constructor");
@@ -139,19 +167,4 @@ const char *Server::ErrorSocket::what() const throw()
 const char *Server::ErrorBind::what() const throw()
 {
     return ("Error on bindSocket method");
-}
-
-const char *Server::ErrorReady::what() const throw()
-{
-    return ("Error on ready method");
-}
-
-const char *Server::ErrorStart::what() const throw()
-{
-    return ("Error on start method");
-}
-
-const char *Server::ErrorClient::what() const throw()
-{
-    return ("Error on acceptClient method");
 }

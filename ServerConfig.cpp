@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/11 11:04:34 by glions            #+#    #+#             */
-/*   Updated: 2025/03/19 13:20:19 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/20 16:05:24 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,6 @@ ServerConfig::ServerConfig(void) :
     _errorPages(),
     _routes()
 {
-    std::cout << "[ServerConfig] created" << std::endl;
 }
 
 ServerConfig::ServerConfig(ServerConfig const &copy):
@@ -28,7 +27,6 @@ ServerConfig::ServerConfig(ServerConfig const &copy):
     _clientMaxBody(copy.getClientMaxBody()),
     _routes()
 {
-    std::cout << "[ServerConfig] copy constructor called" << std::endl;
     std::map<std::string, Route *> tmp = copy.getRoutes();
     for (std::map<std::string, Route *>::iterator it = tmp.begin();
         it != tmp.end(); it++)
@@ -42,16 +40,11 @@ ServerConfig::ServerConfig(ServerConfig const &copy):
 ServerConfig::~ServerConfig()
 {
     for (std::map<std::string, Route *>::iterator it = this->_routes.begin(); it != this->_routes.end(); it++)
-    {
         delete it->second;
-        std::cout << "Route " << it->first << " destroyed" << std::endl;
-    }
-    std::cout << "[ServerConfig] destroyed" << std::endl;
 }
 
 ServerConfig &ServerConfig::operator=(const ServerConfig &copy)
 {
-    std::cout << "[ServerConfig] copy assigment called" << std::endl;
     if (this != &copy)
     {
         this->_port = copy.getPort();
@@ -86,6 +79,7 @@ void ServerConfig::print(void)
         it->second->print();
 }
 
+// SETTERS
 void ServerConfig::setServerName(std::string name)
 {
     this->_serverName = name;
@@ -196,6 +190,7 @@ void ServerConfig::addRoute(Route *route)
     this->_routes.insert(std::make_pair(route->getPath(), route));
 }
 
+// GETTERS
 std::string ServerConfig::getServerName(void) const
 {
     return (this->_serverName);
@@ -220,6 +215,7 @@ std::map<int, std::string> ServerConfig::getErrorPages(void) const
     return (this->_errorPages);
 }
 
+// EXCEPTIONS
 const char *ServerConfig::ErrorNotEnoughArgs::what() const throw()
 {
     return ("not enough args");

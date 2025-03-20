@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:52:16 by glions            #+#    #+#             */
-/*   Updated: 2025/03/19 11:30:07 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/20 15:55:17 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,12 +25,12 @@ class ParseConfig
         ParseConfig(std::string path);
         ~ParseConfig();
         ParseConfig &operator=(const ParseConfig &copy);
-        std::string getPath(void) const;
-        std::vector<ServerConfig *> getConfigs(void) const;
         bool startParsing();
         ServerConfig *parseServer(size_t *i, std::vector<std::string> lines);
         Route *parseRoute(size_t *i, std::vector<std::string> lines);
-        ServerConfig *extractConfig(size_t pos);
+        // GETTERS
+        std::string getPath(void) const;
+        std::vector<ServerConfig *> getConfigs(void) const;
     private:
         std::string _path;
         std::ifstream _file;

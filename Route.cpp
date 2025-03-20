@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/13 09:21:24 by glions            #+#    #+#             */
-/*   Updated: 2025/03/19 13:39:58 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/20 16:04:47 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,6 @@ Route::Route(void):
     _redir()
 {
     this->_redir.exist = false;
-    std::cout << "[Route] created" << std::endl;
 }
 
 Route::Route(std::string path):
@@ -35,7 +34,6 @@ Route::Route(std::string path):
     _redir()
 {
     this->_redir.exist = false;
-    std::cout << "[Route] created with " << this->_path << std::endl;
 }
 
 Route::Route(const Route &copy):
@@ -49,13 +47,9 @@ Route::Route(const Route &copy):
     std::vector<Method> methods = copy.getMethods();
     for (size_t i = 0; i < methods.size(); i++)
         this->_methods.push_back(methods[i]);
-    std::cout << "[Route] copy constructor called" << std::endl;
 }
 
-Route::~Route()
-{
-    std::cout << "[Route] destroyed" << std::endl;
-}
+Route::~Route(){}
 
 void Route::print(void)
 {   
@@ -236,6 +230,8 @@ t_redirection Route::getRedir(void) const
     return (this->_redir);
 }
 
+
+// EXCEPTIONS
 const char *Route::ErrorNotEnoughArgs::what() const throw()
 {
     return ("not enough args");

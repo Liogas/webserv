@@ -11,17 +11,10 @@
 # include <cstdio>
 # include <fstream>
 
-# include "Request.hpp"
 # include "Client.hpp"
 # include "ServerConfig.hpp"
 
-/*
-    Idees :
-        - Creer un constructeur attendant un ficher de config
-*/
-
 class Client;
-class Request;
 
 class Server
 {
@@ -32,12 +25,14 @@ class Server
         bool init(void);
         void print(void);
         void bindSocket(int maxClient);
-        int getFd(void) const;
         bool newClient(void);
+        void eraseClient(int clientFd);
+        // GETTERS
+        int getFd(void) const;
         std::map<int, Client *> getClients(void) const;
         int getEpollFd(void) const;
+        // SETTERS
         void setEpollFd(int fd);
-        void eraseClient(int clientFd);
     private:
         int _fd;
         int _epollFd;
@@ -54,21 +49,6 @@ class Server
     class ErrorBind : public std::exception
     {
         public:
-            virtual const char *what() const throw();
-    };
-    class ErrorReady : public std::exception
-    {
-        public:
-            virtual const char *what() const throw();
-    };
-    class ErrorStart : public std::exception
-    {
-        public :
-            virtual const char *what() const throw();
-    };
-    class ErrorClient : public std::exception
-    {
-        public :
             virtual const char *what() const throw();
     };
 };

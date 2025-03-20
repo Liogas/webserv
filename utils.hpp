@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 19:49:02 by glions            #+#    #+#             */
-/*   Updated: 2025/03/18 09:15:53 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/20 14:57:33 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,10 @@
 # include <fstream>
 # include <string>
 # include <algorithm>
+
+# include <sys/stat.h>
+# include <fcntl.h>
+# include <unistd.h>
 
 enum Method
 {

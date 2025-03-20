@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:24:10 by glions            #+#    #+#             */
-/*   Updated: 2025/03/20 10:58:35 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/20 15:19:19 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,9 +20,8 @@ class Webserv
 {
     public:
         Webserv(void);
-        Webserv(Webserv const &copy);
         ~Webserv();
-        Webserv &operator=(Webserv const &copy);
+        // Webserv &operator=(Webserv const &copy);
         void printServers(void);
         bool parsing(std::string file_path);
         bool bindServers(void);
@@ -31,7 +30,6 @@ class Webserv
         bool handleClient(int clientFd);
         Server *whereIsClient(int fdClient);
         std::vector<Server *> getServers() const;
-        int getEpollfd(void) const;
     private:
         std::vector<Server *> _servers;
         int _epollFd;
