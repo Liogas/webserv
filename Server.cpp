@@ -103,6 +103,14 @@ bool Server::newClient(void)
     return (true);
 }
 
+void Server::eraseClient(int clientFd)
+{
+    if (this->_clients.find(clientFd) != this->_clients.end())
+        this->_clients.erase(clientFd);
+    else
+        std::cerr << "eraseClient : Client unknown" << std::endl;
+}
+
 void Server::setEpollFd(int fd)
 {
     this->_epollFd = fd;

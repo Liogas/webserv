@@ -37,6 +37,7 @@ class Server
         std::map<int, Client *> getClients(void) const;
         int getEpollFd(void) const;
         void setEpollFd(int fd);
+        void eraseClient(int clientFd);
     private:
         int _fd;
         int _epollFd;

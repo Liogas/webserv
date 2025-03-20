@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/03/20 13:33:33 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/20 14:28:21 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -141,7 +141,7 @@ bool Webserv::handleClient(int clientFd)
     std::cout << "Le client se trouve sur le server " << serv->getFd() << std::endl;
     std::map<int, Client *> clients = serv->getClients();
     std::map<int, Client *>::iterator it = clients.find(clientFd);
-    if (it == serv->getClients().end())
+    if (it == clients.end())
     {
         std::cerr << "ERREUR REALLY STRANGE" << std::endl;
         return (false);
@@ -153,10 +153,11 @@ bool Webserv::handleClient(int clientFd)
     buffer[bytes_read] = '\0';
     if (bytes_read == 0)
     {
+        std::cout << "Client " << it->first << " se deconnecte" << std::endl;
+        serv->eraseClient(it->first);
         client->disconnect();
-        serv->getClients().erase(it);
         delete client;
-        return (false);
+        return (true);
     }
     else if (bytes_read < 0)
     {
@@ -171,12 +172,9 @@ Server *Webserv::whereIsClient(int clientFd)
 {
     for (size_t i = 0; i < this->_servers.size(); i++)
     {
-        std::cout << "Je cherche dans le server -> " << this->_servers[i]->getFd() << std::endl;
-        if (this->_servers[i]->getClients().find(clientFd) != this->_servers[i]->getClients().end())
-        {
-
+        std::map<int, Client *> clients = this->_servers[i]->getClients();
+        if (clients.find(clientFd) != clients.end())
             return (this->_servers[i]);
-        }
     }
     return (NULL);
 }
