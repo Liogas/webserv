@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/03/20 13:27:11 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/20 13:33:33 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -173,7 +173,10 @@ Server *Webserv::whereIsClient(int clientFd)
     {
         std::cout << "Je cherche dans le server -> " << this->_servers[i]->getFd() << std::endl;
         if (this->_servers[i]->getClients().find(clientFd) != this->_servers[i]->getClients().end())
+        {
+
             return (this->_servers[i]);
+        }
     }
     return (NULL);
 }
