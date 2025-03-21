@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/03/20 15:30:48 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/21 18:19:20 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -115,6 +115,8 @@ bool Webserv::ready(void)
 */
 bool Webserv::start(void)
 {
+    std::cout << "Mes serveurs : " << std::endl;
+    this->printServers();
     while (1)
     {
         struct epoll_event events[10];
@@ -188,10 +190,91 @@ bool Webserv::handleClient(int clientFd)
         return (false);
     }
     // BUFFER READED
-    std::cout << buffer << std::endl;
+    std::vector<std::string> lines = splitString(buffer, '\n');
+    std::vector<std::string> args = splitString(lines[0], ' ');
+    std::cout << "ARGS : " << std::endl;
+    for (size_t i = 0; i < args.size(); i++)
+        std::cout << args[i] << std::endl;
+    // std::cout << buffer << std::endl;
+    if (isValidExtension(args[1], "html"))
+        this->sendFile(clientFd, args[1]);
+    else
+        this->listDir(clientFd, args[1]); // Juste un test
     // FONCTION_LOLO(buffer, serv, client);
     return (true);
 }
+
+bool Webserv::listDir(int clientFd, std::string path)
+{
+    std::string root = "test";
+    DIR *dir;
+    struct dirent *entry;
+    std::vector<struct dirent *> entrys;
+    std::string fullpath = root + path;
+    if (fullpath.find(root) != 0)
+    {
+        std::cerr << "SECURITY ALERT" << std::endl;
+        return (false);
+    }
+    dir = opendir(fullpath.c_str());
+    if (!dir)
+    {
+        std::cout << "ERROR open directory" << std::endl;
+        return (false);
+    }
+    std::string body = "<html><body><h1>Contents of " + path + " :</h1><ul>";
+    while ((entry = readdir(dir)) != NULL)
+    {
+        std::string link = (path == "/" ? "" : path) + "/" + entry->d_name;
+        std::string tmp = "<li><a href=\"" + link + "\">" + entry->d_name + "</a></li>";
+        std::cout << "Ma balise li contient -> " << tmp << std::endl;
+        body += tmp;
+    }
+    body += "</ul></body></html>";
+    closedir(dir);
+    std::ostringstream oss;
+    oss << body.size();
+    std::string response = 
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: " + oss.str() + "\r\n"
+        "Connection: keep-alive\r\n"
+        "\r\n";
+    response += body;
+    send(clientFd, response.c_str(), response.size(), 0);
+    return (true);
+}
+
+bool Webserv::sendFile(int clientFd, std::string path)
+{
+    std::string root = "test";
+    std::string fullpath = root + path;
+    std::cout << fullpath << std::endl;
+    std::ifstream file(fullpath.c_str());
+    if (!file.is_open())
+    {
+        std::cerr << "ERROR OPEN FILE" << std::endl;
+        return (false);
+    }
+    std::string line;
+    std::string response_body;
+    std::ostringstream oss;
+    std::string response;
+    while (std::getline(file, line))
+        response_body += line;
+    file.close();
+    response += "HTTP/1.1 200 OK\r\n";
+    response += "Content-Type: text/html\r\n";
+    response += "Connection: keep-alive\r\n";  // Ne ferme pas la connexion
+    oss << response_body.size();
+    response += "Content-Length: " + oss.str() + "\r\n";
+    response += "\r\n";
+    response += response_body;
+    send(clientFd, response.c_str(), response.size(), 0);
+    return (true);
+}
+
+
 
 /*
     Methode qui prend le fd du client recherche en parametre.

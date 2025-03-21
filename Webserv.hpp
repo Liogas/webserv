@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:24:10 by glions            #+#    #+#             */
-/*   Updated: 2025/03/20 15:19:19 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/21 18:15:17 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,8 @@
 
 # include "ParseConfig.hpp"
 # include "Server.hpp"
+
+# include <dirent.h>   // Pour opendir, readdir et closedir
 
 class Webserv
 {
@@ -28,6 +30,8 @@ class Webserv
         bool ready(void);
         bool start(void);
         bool handleClient(int clientFd);
+        bool listDir(int clientFd, std::string path); // Methode temporaire, brouillon pour le listage de dossier
+        bool sendFile(int clientFd, std::string path);
         Server *whereIsClient(int fdClient);
         std::vector<Server *> getServers() const;
     private:
