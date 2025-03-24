@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:54:05 by glions            #+#    #+#             */
-/*   Updated: 2025/03/20 15:55:43 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/24 09:27:38 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 
 ParseConfig::ParseConfig(std::string path) : _path(path), _configs()
 {
+    std::cout << "config file -> " << path << std::endl;
     if (!isValidExtension(this->_path, "conf"))
         throw ParseConfig::ErrorFileExtension();
     this->_file.open(this->_path.c_str());

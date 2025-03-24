@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 19:49:21 by glions            #+#    #+#             */
-/*   Updated: 2025/03/18 11:06:05 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/24 10:26:38 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,4 +62,11 @@ std::vector<std::string> readFile(std::ifstream &file)
     while (std::getline(file, line))
         lines.push_back(line);
     return (lines);
+}
+
+std::string toString(int value)
+{
+    std::ostringstream oss;
+    oss << value;
+    return (oss.str());
 }

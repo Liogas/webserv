@@ -31,6 +31,7 @@ class Server
         int getFd(void) const;
         std::map<int, Client *> getClients(void) const;
         int getEpollFd(void) const;
+        ServerConfig *getConfig(void) const;
         // SETTERS
         void setEpollFd(int fd);
     private:

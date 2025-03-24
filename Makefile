@@ -8,7 +8,8 @@ SRCS		= 	main.cpp Webserv.cpp \
 				ServerConfig.cpp \
 				Server.cpp \
 				Route.cpp \
-				utils.cpp
+				utils.cpp \
+				Request.cpp
 
 OBJS		= 	$(SRCS:.cpp=.o)
 

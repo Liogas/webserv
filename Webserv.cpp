@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/03/21 18:19:20 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/24 10:31:59 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -173,6 +173,8 @@ bool Webserv::handleClient(int clientFd)
     }
     Client *client = it->second;
     char buffer[BUFFER_SIZE] = {0};
+    
+    // AUTRE FONCTION
     ssize_t bytes_read = recv(clientFd, buffer, sizeof(buffer) -1, MSG_DONTWAIT);
     buffer[bytes_read] = '\0';
     // CLIENT DISCONNECT
@@ -189,18 +191,22 @@ bool Webserv::handleClient(int clientFd)
         perror("recv");
         return (false);
     }
-    // BUFFER READED
-    std::vector<std::string> lines = splitString(buffer, '\n');
-    std::vector<std::string> args = splitString(lines[0], ' ');
-    std::cout << "ARGS : " << std::endl;
-    for (size_t i = 0; i < args.size(); i++)
-        std::cout << args[i] << std::endl;
-    // std::cout << buffer << std::endl;
-    if (isValidExtension(args[1], "html"))
-        this->sendFile(clientFd, args[1]);
-    else
-        this->listDir(clientFd, args[1]); // Juste un test
+
+    // // BUFFER READED
+    // std::vector<std::string> lines = splitString(buffer, '\n');
+    // std::vector<std::string> args = splitString(lines[0], ' ');
+    // std::cout << "ARGS : " << std::endl;
+    // for (size_t i = 0; i < args.size(); i++)
+    //     std::cout << args[i] << std::endl;
+    // // std::cout << buffer << std::endl;
+    // if (isValidExtension(args[1], "html"))
+    //     this->sendFile(clientFd, args[1]);
+    // else
+    //     this->listDir(clientFd, args[1]); // Juste un test
+    
     // FONCTION_LOLO(buffer, serv, client);
+    Request req(buffer, serv, client);
+    req.handleRequest();
     return (true);
 }
 

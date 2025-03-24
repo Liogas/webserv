@@ -153,6 +153,11 @@ int Server::getEpollFd(void) const
     return (this->_epollFd);
 }
 
+ServerConfig *Server::getConfig(void) const
+{
+    return (this->_config);
+}
+
 std::map<int, Client *> Server::getClients(void) const
 {
     return (this->_clients);
