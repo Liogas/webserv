@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/11 11:04:34 by glions            #+#    #+#             */
-/*   Updated: 2025/03/24 10:21:05 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/24 14:39:29 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,10 @@ void ServerConfig::print(void)
     std::cout << "size : " << this->_routes.size() << std::endl;
     for (std::map<std::string, Route *>::iterator it = this->_routes.begin();
         it != this->_routes.end(); ++it)
+    {
         it->second->print();
+        std::cout << std::endl;
+    }
 }
 
 // SETTERS

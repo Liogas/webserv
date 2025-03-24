@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:24:10 by glions            #+#    #+#             */
-/*   Updated: 2025/03/24 09:57:08 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/24 15:34:33 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,6 @@
 # include "Server.hpp"
 # include "Request.hpp"
 
-# include <dirent.h>   // Pour opendir, readdir et closedir
 
 class Webserv
 {

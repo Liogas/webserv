@@ -49,14 +49,9 @@ bool isDirectory(const std::string& path) {
 }
 
 
-
-void     Request::checkRequest(Route *route){
+void Request::initFinalPath(Route *route)
+{
     std::string tmp;
-
-    if (!route)
-        std::cout << "PAS DE ROUTE" << std::endl;
-    route->print();
-    std::cout << std::endl;
     tmp = route->getRoot();
     if (tmp.size() > 1 && tmp.at(0) == '/')
         tmp.erase(0, 1);
@@ -65,24 +60,64 @@ void     Request::checkRequest(Route *route){
     if (this->_saveRequest.size() != 0 && this->_saveRequest.at(0) != '/')
         this->_saveRequest.insert(0, "/");
     this->_finalPath = tmp + this->_saveRequest;
-    std::cout << "FINAL PATH -> " << this->_finalPath << std::endl;
+}
+
+void     Request::checkRequest(Route *route){
+
+    if (!route)
+        return ;
+    this->initFinalPath(route);
     if (isFile(this->_finalPath))
         this->_htmlContent = this->readRequest();
-    else if (isDirectory(this->_finalPath)){
+    else if (isDirectory(this->_finalPath))
+    {
         if (!route->getIndex().empty()){
-            //ajout de l'index, vérifier si _finalPath termine par /
-            if (this->_finalPath[_finalPath.size() - 1] == '/'){
+            if (this->_finalPath[this->_finalPath.size() - 1] == '/'){
                 this->_finalPath += route->getIndex();
             }
             else
                 this->_finalPath += "/" + route->getIndex();
             this->_htmlContent = this->readRequest();  
-
+        }
+        else if (route->getAutoIndex() == 1)
+        {
+            // AFFICHER CONTENU DOSSIER
+            DIR *dir;
+            struct dirent *entry;
+            std::vector<struct dirent *> entrys;
+            // if (this->_finalPath.find(route->getRoot()) != 0)
+            // {
+            //     std::cout << this->_finalPath << std::endl;
+            //     std::cout << route->getRoot() << std::endl;
+            //     std::cerr << "SECURITY ALERT" << std::endl;
+            //     return ;
+            // }
+            dir = opendir(this->_finalPath.c_str());
+            if (!dir)
+            {
+                std::cout << "ERROR open directory" << std::endl;
+                return ;
+            }
+            this->_htmlContent = "<html><body><h1>Contents :</h1><ul>";
+            while ((entry = readdir(dir)) != NULL)
+            {
+                std::string name = entry->d_name;
+                if (name == ".." && this->_request == this->_finalPath)
+                    continue ;
+                std::string link;
+                if (this->_request.at(this->_request.size() - 1) != '/')
+                    link = this->_request + "/" + name;
+                else
+                    link = this->_request + name;
+                std::cout << "link = " << link << std::endl;
+                std::string tmp = "<li><a href=\"" + link + "\">" + name + "</a></li>";
+                std::cout << "Ma balise li contient -> " << tmp << std::endl;
+                this->_htmlContent += tmp;
+            }
+            this->_htmlContent += "</ul></body></html>";
+            closedir(dir);
         }
     }
-    else
-        std::cout << "Aucun répertoire ni file existe" << std::endl;
-    std::cout << "------------>_FinalPath is:" << _finalPath << std::endl;
 }
 
 
@@ -94,17 +129,16 @@ std::vector<std::string> Request::doSplit(const std::string& str, char delimiter
     if (str[0] == '/'){
         result.push_back("/");
         start = 1;
-        end = str.find(delimiter, start);  // Chercher le prochain '/'
+        end = str.find(delimiter, start); 
     }
     while (end != std::string::npos){
-        result.push_back(str.substr(start, end - start));  // Ajouter la partie avant '/'
-        result.push_back("/");  // Ajouter le token '/' après chaque mot
+        result.push_back(str.substr(start, end - start));
+        result.push_back("/");
         start = end + 1;
         end = str.find(delimiter, start);
     }
-        // Ajouter la dernière partie après le dernier '/' si ya
     if (start < str.length()) {
-        result.push_back(str.substr(start));  // Ajouter la partie apres le dernier '/'
+        result.push_back(str.substr(start));
     }
     return result;
 }
@@ -114,38 +148,34 @@ Route *Request::findLocation(){
     std::string copyRequest;
 
     this->_copyRequest = this->_request;
-    //0. Decouper la route en token
     std::vector<std::string> rootToken = doSplit(this->_request, '/');
     std::map<std::string, Route *> tmp = this->_server->getConfig()->getRoutes();
     std::map<std::string, Route*>::iterator it;
-    it = tmp.begin();
-    while (this->_copyRequest != "/"){
-        std::cout << "copyRequest -> " << this->_copyRequest << std::endl;
-        for (it = tmp.begin(); it != tmp.end(); ++it){
-            if (it->first == this->_copyRequest){
-                std::cout << "(1) la route dans find location est:" << this->_request << std::endl;
-                std::cout << "(1) save request est:" << this->_saveRequest << std::endl;
-                if (it->second == NULL)
-                    std::cout << "EXISTE PAS" << std::endl;
-                return (it->second);
-            }
+    it = tmp.end();
+    while (it == tmp.end()){
+        it = tmp.find(this->_copyRequest);
+        if (it != tmp.end() && it->first == this->_copyRequest)
+        {
+            std::cout << "Route trouve" << std::endl;
+            break ;
         }
-        //2. Règle plus générique
+        if (rootToken.size() <= 0)
+        {
+            std::cout << "Aucune route trouvee" << std::endl;
+            break ;
+        }
         std::string tmp;
         for (size_t i = 0; i < rootToken.size() - 1; ++i) {
             tmp += rootToken[i];
         }
-        std::cout << "Je viens ici" << std::endl;
-        //mettre a jour le vector
         this->_copyRequest = tmp;
         this->_saveRequest.insert(0, rootToken[rootToken.size() - 1]);
         rootToken.pop_back();
     }
     if (it == tmp.end())
-        it = tmp.find("/");
-    std::cout << "(2) la route dans find location est:" << this->_copyRequest << std::endl;
-    std::cout << "(2) save request est:" << this->_saveRequest << std::endl;
-    std::cout << "EXISTE PAS" << std::endl;
+    {
+        return (NULL);
+    }
     return (it->second);
 }
 
@@ -166,7 +196,7 @@ void    Request::getInfoRequest(std::string &line){
 }
 
 
-void    sendResponse(std::string htmlContent, int fdClient){
+void Request::sendResponse(std::string htmlContent){
 
     ssize_t content_length = htmlContent.size();
     std::string content_string = toString(content_length);
@@ -178,10 +208,12 @@ void    sendResponse(std::string htmlContent, int fdClient){
     "\r\n"
     + htmlContent;
 
-    ssize_t bytes_sent = send(fdClient, response.c_str(), response.size(), 0);
+    ssize_t bytes_sent = send(this->_client->getFd(), response.c_str(), response.size(), 0);
     if (bytes_sent < 0) {
         perror("send");
-        close(fdClient);
+        this->_client->disconnect();
+        delete this->_client;
+        this->_client = NULL;
     }
 }
 
@@ -191,44 +223,28 @@ void    Request::handleRequest(){
     std::istringstream stream(this->_buffer);
     Route *ptr = NULL;
 
-    std::cout << "REQUEST COMPLETE :" << std::endl;
-    std::cout << this->_buffer << std::endl;
     if (std::getline(stream, line)){
-        // if (line.find("favicon.ico") == std::string::npos){
-            this->getInfoRequest(line);
-            if (!this->_request.empty()){
-                if ((ptr = this->findLocation()) != NULL)
-                {
-                    this->checkRequest(ptr);
-                    if (!this->_htmlContent.empty())
-                        sendResponse(this->_htmlContent, this->_client->getFd());
-                    else
-                        std::cout << "Aucun contenu ne peut etre affiché!" << std::endl;
-                }
+        this->getInfoRequest(line);
+        if (!this->_request.empty()){
+            if ((ptr = this->findLocation()) != NULL)
+            {
+                this->checkRequest(ptr);
+                if (!this->_htmlContent.empty())
+                    this->sendResponse(this->_htmlContent);
                 else
                 {
-                    // SEND ERROR PAGE
-                    return ;
+                    this->_finalPath = "test/error/404.html";
+                    this->_htmlContent = this->readRequest();
+                    this->sendResponse(this->_htmlContent);
                 }
             }
-        // }
-        // else
-        // {
-        //     if (this->_request == "/favicon.ico") {
-        //         std::ifstream file("favicon.ico", std::ios::binary);
-        //         if (file) {
-        //             std::ostringstream ss;
-        //             ss << file.rdbuf();
-        //             std::string icon_data = ss.str();
-                    
-        //             response_headers = "HTTP/1.1 200 OK\r\nContent-Type: image/x-icon\r\nContent-Length: " + 
-        //                                std::to_string(icon_data.size()) + "\r\n\r\n";
-        //             response_body = icon_data;
-        //         } else {
-        //             response_headers = "HTTP/1.1 404 Not Found\r\n\r\n";
-        //             response_body = "Favicon not found.";
-        //         }
-        //     }
-        // }
+            else
+            {
+                // SEND ERROR PAGE
+                this->_finalPath = "test/error/404.html";
+                this->_htmlContent = this->readRequest();
+                this->sendResponse(this->_htmlContent);
+            }
+        }
     }
 }

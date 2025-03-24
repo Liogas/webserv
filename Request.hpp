@@ -7,6 +7,7 @@
 #include <map>
 #include <vector>
 #include <sys/stat.h> //pour stat
+# include <dirent.h>   // Pour opendir, readdir et closedir
 
 # include "Server.hpp"
 
@@ -27,7 +28,6 @@ class Request {
     Client      *_client;
 public:
         //Constructors
-        Request(void);
         Request(std::string buffer, Server *serv, Client *client);
 
         //Destructor
@@ -46,5 +46,7 @@ public:
         void                        checkRequest(Route *route);
         std::string                 readRequest();
         std::vector<std::string>    doSplit(const std::string& str, char delimiter);
+        void                        sendResponse(std::string htmlContent);
+        void                        initFinalPath(Route *route);
 };
 
