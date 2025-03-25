@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 12:51:15 by glions            #+#    #+#             */
-/*   Updated: 2025/03/24 09:26:58 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/25 11:17:29 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,9 +36,10 @@ int main(int ac, char **av)
     signal(SIGINT, signalHandler); // DETECTE LE CTRL+C
     webserv = new Webserv();
     if (!webserv->parsing(file) ||
-        !webserv->bindServers() ||
-        !webserv->ready() ||
-        !webserv->start())
+            !webserv->initServers() ||
+            !webserv->ready() ||
+            !webserv->start()
+        )
     {
         delete webserv;
         webserv = NULL;

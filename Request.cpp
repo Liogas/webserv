@@ -81,17 +81,9 @@ void     Request::checkRequest(Route *route){
         }
         else if (route->getAutoIndex() == 1)
         {
-            // AFFICHER CONTENU DOSSIER
             DIR *dir;
             struct dirent *entry;
             std::vector<struct dirent *> entrys;
-            // if (this->_finalPath.find(route->getRoot()) != 0)
-            // {
-            //     std::cout << this->_finalPath << std::endl;
-            //     std::cout << route->getRoot() << std::endl;
-            //     std::cerr << "SECURITY ALERT" << std::endl;
-            //     return ;
-            // }
             dir = opendir(this->_finalPath.c_str());
             if (!dir)
             {
@@ -102,16 +94,17 @@ void     Request::checkRequest(Route *route){
             while ((entry = readdir(dir)) != NULL)
             {
                 std::string name = entry->d_name;
-                if (name == ".." && this->_request == this->_finalPath)
+                std::string routeName = route->getPath();
+                if (routeName.at(routeName.size() - 1) != '/')
+                    routeName.insert(routeName.size(), "/");
+                if (name == ".." && this->_request == routeName)
                     continue ;
                 std::string link;
                 if (this->_request.at(this->_request.size() - 1) != '/')
                     link = this->_request + "/" + name;
                 else
                     link = this->_request + name;
-                std::cout << "link = " << link << std::endl;
                 std::string tmp = "<li><a href=\"" + link + "\">" + name + "</a></li>";
-                std::cout << "Ma balise li contient -> " << tmp << std::endl;
                 this->_htmlContent += tmp;
             }
             this->_htmlContent += "</ul></body></html>";
@@ -119,7 +112,6 @@ void     Request::checkRequest(Route *route){
         }
     }
 }
-
 
 std::vector<std::string> Request::doSplit(const std::string& str, char delimiter){
     std::vector<std::string> result;

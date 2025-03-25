@@ -1,22 +1,16 @@
 #include "Server.hpp"
 
 Server::Server(void) :
+    _fd(-1),
     _running(false),
     _config(NULL)
-{
-    if (!this->init())
-        throw Server::ErrorSocket();
-    std::cout << "[Server] created" << std::endl;
-}
+{}
 
 Server::Server(ServerConfig *config) :
+    _fd(-1),
     _running(false),
     _config(config)
-{
-    if (!this->init())
-        throw Server::ErrorSocket();
-    std::cout << "[Server " << this->_fd << "] created" << std::endl;
-}
+{}
 
 Server::~Server(void)
 {
@@ -35,8 +29,9 @@ Server::~Server(void)
         delete this->_config;
         this->_config = NULL;
     }
-    close(this->_fd);
-    std::cout << "[Server " << this->_fd << "] closed" << std::endl;
+    if (this->_fd != -1)
+        close(this->_fd);
+    std::cout << "[Server " << this->_fd << "] destroyed" << std::endl;
 }
 
 /*
@@ -53,11 +48,14 @@ bool Server::init(void)
     fcntl(this->_fd, F_SETFL, O_NONBLOCK);
     if (this->_fd == -1)
     {
-        perror("socket");
-        return false;
+        std::string error = "[!Server " + toString(this->getFd()) + "!] socket";
+        perror(error.c_str());
+        return (false);
     }
     int reuse = 1;
     setsockopt(this->_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+    std::cout << "[Server " << toString(this->getFd()) <<
+        "] socket initialized" << std::endl;
     return (true);
 }
 
@@ -67,7 +65,7 @@ bool Server::init(void)
     INADDR_ANY -> On accepte toutes les adresses IP
     htons() -> convertit notre port qui est un int en format reseau (big endian)
 */
-void Server::bindSocket(int maxClient)
+bool Server::bindSocket(int maxClient)
 {
     this->_address.sin_family = AF_INET;
     this->_address.sin_addr.s_addr = INADDR_ANY;
@@ -76,16 +74,19 @@ void Server::bindSocket(int maxClient)
             reinterpret_cast<struct sockaddr*>(&this->_address),
             sizeof(this->_address)) == -1)
     {
-        perror("bind");
-        throw Server::ErrorBind();
+        std::string error = "[!Server " + toString(this->getFd()) + "!] bind";
+        perror(error.c_str());
+        return (false);
     }
     if (listen(this->_fd, maxClient) == -1)
     {
-        perror("listen");
-        throw Server::ErrorBind();
+        std::string error = "[!Server " + toString(this->getFd()) + "!] listen";
+        perror(error.c_str());
+        return (false);
     }
     std::cout << "[Server " << this->_fd << "] Listening on port "
         << ntohs(this->_address.sin_port) << std::endl;
+    return (true);
 }
 
 /*

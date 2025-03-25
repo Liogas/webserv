@@ -24,7 +24,7 @@ class Server
         ~Server();
         bool init(void);
         void print(void);
-        void bindSocket(int maxClient);
+        bool bindSocket(int maxClient);
         bool newClient(void);
         void eraseClient(int clientFd);
         // GETTERS

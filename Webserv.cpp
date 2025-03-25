@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/03/24 15:35:54 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/25 11:34:31 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,24 +52,31 @@ bool Webserv::parsing(std::string file_path)
         std::cerr << e.what() << std::endl;
         return (false);
     }
+    this->printServers();
     return (true);
 }
 
-
-/*
-    Methode qui s'occupe du bind et du listen pour les differents serveurs crees.
-*/
-bool Webserv::bindServers(void)
+bool Webserv::initServers(void)
 {
-    try
+    int error = 0;
+    int nbServ = this->_servers.size();
+    int i = 0;
+    for (std::vector<Server *>::iterator it = this->_servers.begin();
+        it != this->_servers.end();)
     {
-        for (size_t i = 0; i < this->_servers.size(); i++)
-            this->_servers[i]->bindSocket(MAX_CLIENTS);
-    } catch (std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        return (false);
+        i++;
+        if ((*it)->getFd() == -1 && (
+                !(*it)->init() ||
+                !(*it)->bindSocket(MAX_CLIENTS)))
+        {
+            delete *it;
+            error++;
+            it = this->_servers.erase(it);
+            continue ;
+        }
+        it++;
     }
-    return (true);
+    return (error == nbServ) ? false : true;
 }
 
 /*
@@ -80,26 +87,36 @@ bool Webserv::bindServers(void)
 */
 bool Webserv::ready(void)
 {
+    int nbError = 0;
+    int nbServer = this->_servers.size();
     this->_epollFd = epoll_create1(0);
     if (this->_epollFd == -1)
     {
         perror("epoll_create1");
         return (false);
     }
-    for (size_t i = 0; i < this->_servers.size(); i++)
+    for (std::vector<Server *>::iterator it = this->_servers.begin();
+            it != this->_servers.end();)
     {
         struct epoll_event event = {};
-        this->_servers[i]->setEpollFd(this->_epollFd);
+        (*it)->setEpollFd(this->_epollFd);
         event.events = EPOLLIN;
-        event.data.fd = this->_servers[i]->getFd();
+        event.data.fd = (*it)->getFd();
         if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD,
-                this->_servers[i]->getFd(), &event) == -1)
+                (*it)->getFd(), &event) == -1)
         {
-            perror("epoll_ctl");
-            return (false);
+            std::string error = "[!Server "
+                + toString((*it)->getFd()) + "!] epoll_ctl";
+            perror(error.c_str());
+            delete *it;
+            nbError++;
+            it = this->_servers.erase(it);
+            continue ;
         }
+        std::cout << "[Server " << (*it)->getFd() << "] started" << std::endl;
+        it++;
     }
-    return (true);
+    return (nbError == nbServer) ? true : true;
 }
 
 /*
@@ -115,8 +132,6 @@ bool Webserv::ready(void)
 */
 bool Webserv::start(void)
 {
-    std::cout << "Mes serveurs : " << std::endl;
-    this->printServers();
     while (1)
     {
         struct epoll_event events[10];
@@ -173,8 +188,6 @@ bool Webserv::handleClient(int clientFd)
     }
     Client *client = it->second;
     char buffer[BUFFER_SIZE] = {0};
-    
-    // AUTRE FONCTION
     ssize_t bytes_read = recv(clientFd, buffer, sizeof(buffer) -1, MSG_DONTWAIT);
     buffer[bytes_read] = '\0';
     // CLIENT DISCONNECT
@@ -191,95 +204,11 @@ bool Webserv::handleClient(int clientFd)
         perror("recv");
         return (false);
     }
-
-    // // BUFFER READED
-    // std::vector<std::string> lines = splitString(buffer, '\n');
-    // std::vector<std::string> args = splitString(lines[0], ' ');
-    // std::cout << "ARGS : " << std::endl;
-    // for (size_t i = 0; i < args.size(); i++)
-    //     std::cout << args[i] << std::endl;
-    // // std::cout << buffer << std::endl;
-    // if (isValidExtension(args[1], "html"))
-    //     this->sendFile(clientFd, args[1]);
-    // else
-    //     this->listDir(clientFd, args[1]); // Juste un test
-    
-    // FONCTION_LOLO(buffer, serv, client);
+    // CLIENT PART
     Request req(buffer, serv, client);
     req.handleRequest();
     return (true);
 }
-
-bool Webserv::listDir(int clientFd, std::string path)
-{
-    std::string root = "test";
-    DIR *dir;
-    struct dirent *entry;
-    std::vector<struct dirent *> entrys;
-    std::string fullpath = root + path;
-    if (fullpath.find(root) != 0)
-    {
-        std::cerr << "SECURITY ALERT" << std::endl;
-        return (false);
-    }
-    dir = opendir(fullpath.c_str());
-    if (!dir)
-    {
-        std::cout << "ERROR open directory" << std::endl;
-        return (false);
-    }
-    std::string body = "<html><body><h1>Contents of " + path + " :</h1><ul>";
-    while ((entry = readdir(dir)) != NULL)
-    {
-        std::string link = (path == "/" ? "" : path) + "/" + entry->d_name;
-        std::string tmp = "<li><a href=\"" + link + "\">" + entry->d_name + "</a></li>";
-        std::cout << "Ma balise li contient -> " << tmp << std::endl;
-        body += tmp;
-    }
-    body += "</ul></body></html>";
-    closedir(dir);
-    std::ostringstream oss;
-    oss << body.size();
-    std::string response = 
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: " + oss.str() + "\r\n"
-        "Connection: keep-alive\r\n"
-        "\r\n";
-    response += body;
-    send(clientFd, response.c_str(), response.size(), 0);
-    return (true);
-}
-
-bool Webserv::sendFile(int clientFd, std::string path)
-{
-    std::string root = "test";
-    std::string fullpath = root + path;
-    std::cout << fullpath << std::endl;
-    std::ifstream file(fullpath.c_str());
-    if (!file.is_open())
-    {
-        std::cerr << "ERROR OPEN FILE" << std::endl;
-        return (false);
-    }
-    std::string line;
-    std::string response_body;
-    std::ostringstream oss;
-    std::string response;
-    while (std::getline(file, line))
-        response_body += line;
-    file.close();
-    response += "HTTP/1.1 200 OK\r\n";
-    response += "Content-Type: text/html\r\n";
-    response += "Connection: keep-alive\r\n";  // Ne ferme pas la connexion
-    oss << response_body.size();
-    response += "Content-Length: " + oss.str() + "\r\n";
-    response += "\r\n";
-    response += response_body;
-    send(clientFd, response.c_str(), response.size(), 0);
-    return (true);
-}
-
 
 
 /*
