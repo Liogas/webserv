@@ -62,6 +62,38 @@ void Request::initFinalPath(Route *route)
     this->_finalPath = tmp + this->_saveRequest;
 }
 
+void Request::listDir(Route *route)
+{
+    DIR *dir;
+    struct dirent *entry;
+    std::vector<struct dirent *> entrys;
+    dir = opendir(this->_finalPath.c_str());
+    if (!dir)
+    {
+        std::cout << "ERROR open directory" << std::endl;
+        return ;
+    }
+    this->_htmlContent = "<html><body><h1>Contents :</h1><ul>";
+    while ((entry = readdir(dir)) != NULL)
+    {
+        std::string name = entry->d_name;
+        std::string routeName = route->getPath();
+        if (routeName.at(routeName.size() - 1) != '/')
+            routeName.insert(routeName.size(), "/");
+        if (name == ".." && this->_request == routeName)
+            continue ;
+        std::string link;
+        if (this->_request.at(this->_request.size() - 1) != '/')
+            link = this->_request + "/" + name;
+        else
+            link = this->_request + name;
+        std::string tmp = "<li><a href=\"" + link + "\">" + name + "</a></li>";
+        this->_htmlContent += tmp;
+    }
+    this->_htmlContent += "</ul></body></html>";
+    closedir(dir);
+}
+
 void     Request::checkRequest(Route *route){
 
     if (!route)
@@ -72,44 +104,14 @@ void     Request::checkRequest(Route *route){
     else if (isDirectory(this->_finalPath))
     {
         if (!route->getIndex().empty()){
-            if (this->_finalPath[this->_finalPath.size() - 1] == '/'){
+            if (this->_finalPath[this->_finalPath.size() - 1] == '/')
                 this->_finalPath += route->getIndex();
-            }
             else
                 this->_finalPath += "/" + route->getIndex();
             this->_htmlContent = this->readRequest();  
         }
         else if (route->getAutoIndex() == 1)
-        {
-            DIR *dir;
-            struct dirent *entry;
-            std::vector<struct dirent *> entrys;
-            dir = opendir(this->_finalPath.c_str());
-            if (!dir)
-            {
-                std::cout << "ERROR open directory" << std::endl;
-                return ;
-            }
-            this->_htmlContent = "<html><body><h1>Contents :</h1><ul>";
-            while ((entry = readdir(dir)) != NULL)
-            {
-                std::string name = entry->d_name;
-                std::string routeName = route->getPath();
-                if (routeName.at(routeName.size() - 1) != '/')
-                    routeName.insert(routeName.size(), "/");
-                if (name == ".." && this->_request == routeName)
-                    continue ;
-                std::string link;
-                if (this->_request.at(this->_request.size() - 1) != '/')
-                    link = this->_request + "/" + name;
-                else
-                    link = this->_request + name;
-                std::string tmp = "<li><a href=\"" + link + "\">" + name + "</a></li>";
-                this->_htmlContent += tmp;
-            }
-            this->_htmlContent += "</ul></body></html>";
-            closedir(dir);
-        }
+            this->listDir(route);
     }
 }
 
@@ -232,7 +234,7 @@ void    Request::handleRequest(){
             }
             else
             {
-                // SEND ERROR PAGE
+                // ERROR 400
                 this->_finalPath = "test/error/404.html";
                 this->_htmlContent = this->readRequest();
                 this->sendResponse(this->_htmlContent);

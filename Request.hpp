@@ -46,6 +46,7 @@ public:
         void                        checkRequest(Route *route);
         std::string                 readRequest();
         std::vector<std::string>    doSplit(const std::string& str, char delimiter);
+        void                        listDir(Route *route);
         void                        sendResponse(std::string htmlContent);
         void                        initFinalPath(Route *route);
 };
