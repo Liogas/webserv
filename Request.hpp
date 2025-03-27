@@ -7,7 +7,8 @@
 #include <map>
 #include <vector>
 #include <sys/stat.h> //pour stat
-# include <dirent.h>   // Pour opendir, readdir et closedir
+#include <dirent.h>   // Pour opendir, readdir et closedir
+#include <cstring>
 
 # include "Server.hpp"
 
@@ -24,8 +25,14 @@ class Request {
     std::string _buffer;
     std::string _copyRequest;
     std::string _saveRequest;
+    std::string _contentType;
+    std::string _contentLength;
+    std::string _dataPost;
+    std::string _nameFile;
     Server      *_server;
     Client      *_client;
+    std::map<std::string, std::string> dataForm;
+
 public:
         //Constructors
         Request(std::string buffer, Server *serv, Client *client);
@@ -44,6 +51,15 @@ public:
         void                        getInfoRequest(std::string &line);
         Route                      *findLocation();
         void                        checkRequest(Route *route);
+        void                        selectMethod(void);
+        void                        getLengthContent(std::string &line);
+        void                        parsePost(void);
+        void                        parsePostForm(std::istringstream& stream);
+        void                        parseDataPost(std::string &str);
+        void                        sendFileToServ(std::istringstream& stream, std::string boundary);
+        void                        generateHtmlPage();
+        std::string                 printDataForm();
+        void                        startPost(void);
         std::string                 readRequest();
         std::vector<std::string>    doSplit(const std::string& str, char delimiter);
         void                        listDir(Route *route);

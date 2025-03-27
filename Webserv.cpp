@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/03/25 11:34:31 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/27 16:29:57 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,7 +114,8 @@ bool Webserv::ready(void)
             continue ;
         }
         std::cout << "[Server " << (*it)->getFd() << "] started" << std::endl;
-        it++;
+        if (it != this->_servers.end())
+            it++;
     }
     return (nbError == nbServer) ? true : true;
 }
@@ -134,6 +135,7 @@ bool Webserv::start(void)
 {
     while (1)
     {
+        std::cout << "De nouveau ici" << std::endl;
         struct epoll_event events[10];
         int nfds = epoll_wait(this->_epollFd, events, MAX_CLIENTS, -1);
         if (nfds == -1)
@@ -170,6 +172,7 @@ bool Webserv::start(void)
     Ensuite il faudra appeler la fonction de Loreen avec le client, le buffer et
     le serveur en parametre.
 */
+
 bool Webserv::handleClient(int clientFd)
 {
     Server *serv = this->whereIsClient(clientFd);
@@ -187,28 +190,172 @@ bool Webserv::handleClient(int clientFd)
         return (false);
     }
     Client *client = it->second;
-    char buffer[BUFFER_SIZE] = {0};
-    ssize_t bytes_read = recv(clientFd, buffer, sizeof(buffer) -1, MSG_DONTWAIT);
-    buffer[bytes_read] = '\0';
-    // CLIENT DISCONNECT
-    if (bytes_read == 0)
+    std::string header, body, bufferAll;
+    size_t contentLength = 0;
+    while (1)
     {
-        serv->eraseClient(it->first);
-        client->disconnect();
-        delete client;
-        return (true);
+        char buffer[BUFFER_SIZE] = {0};
+        size_t bytes_read = recv(clientFd, buffer, sizeof(buffer), MSG_DONTWAIT);
+        if (bytes_read == 0)
+        {
+            serv->eraseClient(it->first);
+            client->disconnect();
+            delete client;
+            return (true);
+        }
+        // ERROR RECV
+        else if (bytes_read < 0)
+        {
+            perror("recv");
+            std::cout << errno << std::endl;
+            return (false);
+        }
+        if (contentLength == 0)
+        {
+            bufferAll.append(buffer, bytes_read);
+            size_t startBody = bufferAll.find("\r\n\r\n");
+            if (startBody != std::string::npos)
+            {
+                size_t posContentLength = bufferAll.find("Content-Length:");
+                if (posContentLength != std::string::npos)
+                {
+                    posContentLength += 15;
+                    size_t end = bufferAll.find("\r\n", posContentLength);
+                    if (end != std::string::npos)
+                    {
+                        std::stringstream ss(bufferAll.substr(posContentLength, end - posContentLength));
+                        ss >> contentLength;
+                    }
+                    else 
+                        return (false);
+                }
+                else
+                    break ;
+                header = bufferAll.substr(0, startBody);
+                body = bufferAll.substr(startBody);
+                if (body.size() >= contentLength)
+                    break ;
+            }
+        }
+        else
+        {
+            body.append(buffer, bytes_read);
+            if (body.size() >= contentLength)
+                break ;
+        }
     }
-    // ERROR RECV
-    else if (bytes_read < 0)
-    {
-        perror("recv");
-        return (false);
-    }
-    // CLIENT PART
-    Request req(buffer, serv, client);
+    bufferAll = header;
+    bufferAll.append(body);
+    Request req(bufferAll, serv, client);
     req.handleRequest();
     return (true);
 }
+
+// bool Webserv::handleClient(int clientFd)
+// {
+//     Server *serv = this->whereIsClient(clientFd);
+//     if (!serv)
+//     {
+//         std::cerr << "client " << clientFd
+//             << " unknown" << std::endl;
+//         return (false);
+//     }
+//     std::map<int, Client *> clients = serv->getClients();
+//     std::map<int, Client *>::iterator it = clients.find(clientFd);
+//     if (it == clients.end())
+//     {
+//         std::cerr << "ERROR REALLY STRANGE" << std::endl;
+//         return (false);
+//     }
+//     Client *client = it->second;
+
+//     std::string bufferAll;
+//     std::string header;
+//     std::string body;
+//     // ssize_t bytesAll = 0;
+//     size_t contentLength = 0;
+//     size_t bytes = 0;
+//     char buffer[BUFFER_SIZE] = {0};
+//     ssize_t bytes_read = 0;
+//     while (1)
+//     {
+//         buffer[0] = 0;
+//         bytes_read = recv(clientFd, buffer, sizeof(buffer) -1, MSG_DONTWAIT);
+//         bytes+= bytes_read;
+//         std::cout << "total read = " << bytes << std::endl; 
+//         // CLIENT DISCONNECT
+//         if (bytes_read == 0)
+//         {
+//             serv->eraseClient(it->first);
+//             client->disconnect();
+//             delete client;
+//             return (true);
+//         }
+//         // ERROR RECV
+//         else if (bytes_read < 0)
+//         {
+//             perror("recv");
+//             std::cout << errno << std::endl;
+//             return (false);
+//         }
+//         if (contentLength == 0) //Traiter les en ttes
+//         {
+//             header += buffer;
+//             size_t posEmpty = header.find("\r\n\r\n");
+//             if (posEmpty != std::string::npos)
+//             {
+//                 bytes =  bytes - posEmpty;
+//                 size_t pos = header.find("Content-Length:");
+//                 if (pos != std::string::npos) //POST
+//                 {
+//                     pos += 15;  // Passer "Content-Length: "
+//                     size_t end = header.find("\r\n", pos); // Trouver la fin de la valeur de Content-Length
+//                     if (end != std::string::npos)
+//                     {
+                        
+//                         std::cout << "pos empty" << posEmpty << std::endl;
+                       
+                        
+//                     }
+//                     // Extraire le body à partir de la fin des en-têtes
+//                     body = header.substr(posEmpty + 4); // +4 pour sauter "\r\n\r\n"
+//                     header.erase(0, posEmpty + 4); // Enlever le header de l'objet header
+//                     bytes -= header.size();
+//                     std::cout << "header size -> " << header.size() << std::endl;
+//                     std::cout << "---- HEADER ---- " << std::endl;
+//                     std::cout << header << std::endl;
+//                     std::cout << "---END HEADER---"  << std::endl;
+//                     std::cout << "Contenu de mon body a ce moment -> " << body << " -> " << body.size() << std::endl;
+//                     if (bytes >= contentLength)
+//                         break ;
+//                 }
+//                 else  // METHOD GET
+//                     break ;
+//             }
+//         }
+//         else
+//         {
+//             body += buffer;
+            
+//             std::cout << "contentLength = " << contentLength << "       body size= " << body.size() << "     ";
+//             if (bytes >= contentLength)
+//             {
+                
+//                 break ;
+//             }
+//         }
+//     }
+//     std::cout << "tooooooooz" << std::endl;
+//     bytes_read = recv(clientFd, buffer, sizeof(buffer) -1, MSG_DONTWAIT);
+
+//     std::cout << buffer<< std::endl;
+//     bufferAll = header + body;
+//     bufferAll[bufferAll.size()] = '\0';
+//     // CLIENT PART
+//     Request req(bufferAll, serv, client);
+//     req.handleRequest();
+//     return (true);
+// }
 
 
 /*
