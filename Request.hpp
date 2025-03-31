@@ -61,6 +61,7 @@ public:
         std::string                 printDataForm();
         void                        startPost(void);
         std::string                 readRequest();
+        std::string                 getContentFile(std::string boundary);
         std::vector<std::string>    doSplit(const std::string& str, char delimiter);
         void                        listDir(Route *route);
         void                        sendResponse(std::string htmlContent);

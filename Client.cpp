@@ -12,6 +12,9 @@ Client::Client(int fd, Server &serv) :
         perror("epoll_ctl");
         throw Client::ErrorClient();
     }
+    this->_contentLength = -1;
+    this->_buffer = "";
+    this->_bytes = 0;
 }
 
 Client::~Client()
@@ -26,10 +29,46 @@ void Client::disconnect(void)
     close(this->_fd);
 }
 
+bool Client::addBuffer(std::string buffer, ssize_t bytesRead)
+{
+    std::cout << buffer << std::endl;
+    this->_buffer.append(buffer);
+    this->_bytes += bytesRead;
+    if (this->_contentLength == -1)
+    {
+        size_t startBody = this->_buffer.find("\r\n\r\n");
+        if (startBody != std::string::npos)
+        {
+            size_t posContentLength = this->_buffer.find("Content-Length:");
+            if (posContentLength != std::string::npos)
+            {
+                posContentLength += 15;
+                size_t end = this->_buffer.find("\r\n", posContentLength);
+                if (end != std::string::npos)
+                {
+                    std::stringstream ss( this->_buffer.substr(posContentLength, end - posContentLength));
+                    ss >> this->_contentLength;
+                    this->_bytes -= startBody + 4;
+                }
+            }
+            else
+                return (true);
+        }
+    }
+    if (this->_contentLength != -1 && this->_contentLength <= this->_bytes)
+        return (true);
+    return (false);
+}
+
 // GETTERS
 int Client::getFd(void) const
 {
     return (this->_fd);
+}
+
+std::string Client::getBuffer(void) const
+{
+    return (this->_buffer);
 }
 
 // EXCEPTIONS

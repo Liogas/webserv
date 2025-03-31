@@ -6,14 +6,14 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/03/27 16:29:57 by glions           ###   ########.fr       */
+/*   Updated: 2025/03/31 11:14:09 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
 
 # define MAX_CLIENTS 5
-# define BUFFER_SIZE 1024
+# define BUFFER_SIZE 64000
 
 Webserv::Webserv() :
     _servers(),
@@ -190,64 +190,29 @@ bool Webserv::handleClient(int clientFd)
         return (false);
     }
     Client *client = it->second;
-    std::string header, body, bufferAll;
-    size_t contentLength = 0;
-    while (1)
+    char buffer[BUFFER_SIZE] = {0};
+    size_t bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
+    std::cout << "BUFFER DE RECV : "<< std::endl;
+    std::cout << buffer << std::endl;
+    if (bytesRead == 0)
     {
-        char buffer[BUFFER_SIZE] = {0};
-        size_t bytes_read = recv(clientFd, buffer, sizeof(buffer), MSG_DONTWAIT);
-        if (bytes_read == 0)
-        {
-            serv->eraseClient(it->first);
-            client->disconnect();
-            delete client;
-            return (true);
-        }
-        // ERROR RECV
-        else if (bytes_read < 0)
-        {
-            perror("recv");
-            std::cout << errno << std::endl;
-            return (false);
-        }
-        if (contentLength == 0)
-        {
-            bufferAll.append(buffer, bytes_read);
-            size_t startBody = bufferAll.find("\r\n\r\n");
-            if (startBody != std::string::npos)
-            {
-                size_t posContentLength = bufferAll.find("Content-Length:");
-                if (posContentLength != std::string::npos)
-                {
-                    posContentLength += 15;
-                    size_t end = bufferAll.find("\r\n", posContentLength);
-                    if (end != std::string::npos)
-                    {
-                        std::stringstream ss(bufferAll.substr(posContentLength, end - posContentLength));
-                        ss >> contentLength;
-                    }
-                    else 
-                        return (false);
-                }
-                else
-                    break ;
-                header = bufferAll.substr(0, startBody);
-                body = bufferAll.substr(startBody);
-                if (body.size() >= contentLength)
-                    break ;
-            }
-        }
-        else
-        {
-            body.append(buffer, bytes_read);
-            if (body.size() >= contentLength)
-                break ;
-        }
+        serv->eraseClient(it->first);
+        client->disconnect();
+        delete client;
+        return (true);
     }
-    bufferAll = header;
-    bufferAll.append(body);
-    Request req(bufferAll, serv, client);
-    req.handleRequest();
+    // ERROR RECV
+    else if (bytesRead < 0)
+    {
+        perror("recv");
+        std::cout << errno << std::endl;
+        return (false);
+    }
+    if (client->addBuffer(buffer, bytesRead))
+    {
+        Request req(client->getBuffer(), serv, client);
+        req.handleRequest();
+    }
     return (true);
 }
 
@@ -276,7 +241,7 @@ bool Webserv::handleClient(int clientFd)
 //     size_t contentLength = 0;
 //     size_t bytes = 0;
 //     char buffer[BUFFER_SIZE] = {0};
-//     ssize_t bytes_read = 0;
+//     ssize_t bytesRead = 0;
 //     while (1)
 //     {
 //         buffer[0] = 0;

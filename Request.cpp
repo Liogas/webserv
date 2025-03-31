@@ -183,11 +183,11 @@ void Request::parsePostForm(std::istringstream& stream)
 
 void    Request::sendFileToServ(std::istringstream& stream, std::string boundary){
     std::string line;
-
+    boundary = "--" + boundary;
     while (getline(stream, line))
     {
         // std::cout << "line esttttttttttttttttttttttt: " << line << std::endl;
-        if (line == boundary + "--")
+       if (line == boundary + "--") 
             break ;
         if (strncmp(line.c_str(), "Content-Disposition:", 20) == 0){
             std::vector<std::string>tmp = splitString(line.c_str(), ' ');
@@ -197,9 +197,36 @@ void    Request::sendFileToServ(std::istringstream& stream, std::string boundary
             this->_nameFile = tmp1[1];
         }
     }
+    if (!this->_nameFile.empty())
+    {
+        std::string body = this->getContentFile(boundary);
+        this->_nameFile = this->_finalPath + this->_nameFile;
+        std::cout << "nameFile -> " << this->_nameFile << std::endl;
+        // std::ofstream file(this->)
+    }
 }
-
-
+std::string Request::getContentFile(std::string boundary)
+{
+    size_t startBody = this->_buffer.find("\r\n\r\n") + 4;
+    if (startBody != std::string::npos)
+    {
+        this->_buffer.erase(0, startBody);
+        startBody = this->_buffer.find("\r\n\r\n") + 4;
+        if (startBody != std::string::npos)
+        {
+            this->_buffer.erase(0, startBody);
+            boundary.resize(boundary.size() - 1);
+            size_t end = this->_buffer.find(boundary);
+            if (end != std::string::npos)
+            {
+                return (this->_buffer.substr(0, end));
+            }
+            else
+                return (this->_buffer.substr(startBody));
+        }
+    }
+    return ("");
+}
 void    Request::parsePost(){
     std::string line;
     std::istringstream stream(this->_buffer);
@@ -210,6 +237,7 @@ void    Request::parsePost(){
         if (strncmp("Content-Length", line.c_str(), 14) == 0)
             this->getLengthContent(line);
         else if (strncmp("Content-Type", line.c_str(), 12) == 0){
+            std::cout << "line -> " << line << std::endl;
             std::vector<std::string> args = splitString(line, ' ');
             this->_contentType = args[1];
             if (this->_contentType.at(this->_contentType.size() - 1 == '\0'))
@@ -219,7 +247,10 @@ void    Request::parsePost(){
                 this->parsePostForm(stream);
             else if (this->_contentType == "multipart/form-data") //on sait que on veut envoyer des donnees vers le serveur
             {
-                this->sendFileToServ(stream, splitString(args[2], '=')[1]);
+                std::cout << "args[2] -> " << args[2] << std::endl;
+                std::vector<std::string> tmp = splitString(args[2], '=');
+                std::cout << "Mon boundary = " << tmp[1] << std::endl;
+                this->sendFileToServ(stream, tmp[1]);
             }
             else if (this->_contentType == "application/json")
             {
@@ -389,9 +420,12 @@ void    Request::handleRequest(){
             {
                 this->checkRequest(ptr);
                 if (!this->_htmlContent.empty())
+                {
                     this->sendResponse(this->_htmlContent);
+                }
                 else
                 {
+                    std::cout << "error" << std::endl;
                     this->_finalPath = "test/error/404.html";
                     this->_htmlContent = this->readRequest();
                     this->sendResponse(this->_htmlContent);
@@ -400,6 +434,7 @@ void    Request::handleRequest(){
             else
             {
                 // ERROR 400
+                std::cout << "error (2)" << std::endl;
                 this->_finalPath = "test/error/404.html";
                 this->_htmlContent = this->readRequest();
                 this->sendResponse(this->_htmlContent);
