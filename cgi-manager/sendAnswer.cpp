@@ -5,12 +5,13 @@
 #include <sstream>
 
 #include "sendAnswer.hpp"
+#include "cgi.hpp"
 
 void sendResponse(int client_socket) {
     // Page HTML écrite en dur
     std::ostringstream oss;
     
-        std::string html_content = executePHP("/home/tissad/webserv/cgi-bin/phpinfo.php");
+        std::string html_content = cgi();
         std::cout << "===================> " << html_content << std::endl;
         oss << html_content.size();
     // Création de la réponse HTTP complète
