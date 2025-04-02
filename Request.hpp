@@ -16,7 +16,7 @@ class Routes;
 
 class Request {
     private:
-    std::string _method;
+    Method _method;
     std::string _request;
     std::string _version;
     std::string _hostName;
@@ -27,6 +27,7 @@ class Request {
     std::string _saveRequest;
     std::string _contentType;
     std::string _contentLength;
+    std::string _boundary;
     std::string _dataPost;
     std::string _nameFile;
     Server      *_server;
@@ -50,20 +51,19 @@ public:
         void                        handleRequest(void);
         void                        getInfoRequest(std::string &line);
         Route                      *findLocation();
-        void                        checkRequest(Route *route);
-        void                        selectMethod(void);
+        std::string                 checkRequest(Route *route);
+        void                        selectMethod(std::istringstream &stream, Route *route);
         void                        getLengthContent(std::string &line);
-        void                        parsePost(void);
-        void                        parsePostForm(std::istringstream& stream);
-        void                        parseDataPost(std::string &str);
+        void                        getInfoPost(void);
+        void                        getInfoForm(std::istringstream &stream);
         void                        sendFileToServ(std::istringstream& stream, std::string boundary);
-        void                        generateHtmlPage();
+        std::string                 generateHtmlPage(std::string title, std::string body);
         std::string                 printDataForm();
-        void                        startPost(void);
+        void                        startPost(std::istringstream &stream);
         std::string                 readRequest();
-        std::string                 getContentFile(std::string boundary);
+        std::string                 getContentFile(std::string &boundary);
         std::vector<std::string>    doSplit(const std::string& str, char delimiter);
-        void                        listDir(Route *route);
+        std::string                 listDir(Route *route);
         void                        sendResponse(std::string htmlContent);
         void                        initFinalPath(Route *route);
 };

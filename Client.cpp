@@ -9,7 +9,7 @@ Client::Client(int fd, Server &serv) :
     event.data.fd = this->_fd;
     if (epoll_ctl(this->_serv.getEpollFd(), EPOLL_CTL_ADD, this->_fd, &event) == -1)
     {
-        perror("epoll_ctl");
+        strerror(errno);
         throw Client::ErrorClient();
     }
     this->_contentLength = -1;
@@ -29,10 +29,14 @@ void Client::disconnect(void)
     close(this->_fd);
 }
 
+void Client::resetBuffer(void)
+{
+    this->_buffer.resize(0);
+}
+
 bool Client::addBuffer(std::string buffer, ssize_t bytesRead)
 {
-    std::cout << buffer << std::endl;
-    this->_buffer.append(buffer);
+    this->_buffer.append(buffer, this->_buffer.size(), bytesRead);
     this->_bytes += bytesRead;
     if (this->_contentLength == -1)
     {
@@ -52,11 +56,16 @@ bool Client::addBuffer(std::string buffer, ssize_t bytesRead)
                 }
             }
             else
+            {
+                std::cout << "GET METHOD" << std::endl;
                 return (true);
+            }
         }
     }
     if (this->_contentLength != -1 && this->_contentLength <= this->_bytes)
+    {
         return (true);
+    }
     return (false);
 }
 

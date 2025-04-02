@@ -1,4 +1,5 @@
 #include "Request.hpp"
+#include <string>
 
 //Constructors
 Request::Request(std::string buffer, Server *serv, Client *client) :
@@ -62,18 +63,19 @@ void Request::initFinalPath(Route *route)
     this->_finalPath = tmp + this->_saveRequest;
 }
 
-void Request::listDir(Route *route)
+std::string Request::listDir(Route *route)
 {
     DIR *dir;
     struct dirent *entry;
+    std::string html;
     std::vector<struct dirent *> entrys;
     dir = opendir(this->_finalPath.c_str());
     if (!dir)
     {
         std::cout << "ERROR open directory" << std::endl;
-        return ;
+        return "";
     }
-    this->_htmlContent = "<html><body><h1>Contents :</h1><ul>";
+    html = "<html><body><h1>Contents :</h1><ul>";
     while ((entry = readdir(dir)) != NULL)
     {
         std::string name = entry->d_name;
@@ -88,18 +90,30 @@ void Request::listDir(Route *route)
         else
             link = this->_request + name;
         std::string tmp = "<li><a href=\"" + link + "\">" + name + "</a></li>";
-        this->_htmlContent += tmp;
+        html += tmp;
     }
-    this->_htmlContent += "</ul></body></html>";
+    html += "</ul></body></html>";
     closedir(dir);
+    return (html);
 }
 
 
-void    Request::parseDataPost(std::string &str){
+void    Request::getInfoForm(std::istringstream &stream){
     std::vector<std::string> tmp;
     std::vector<std::string>::iterator it;
-
-    tmp = splitString(str, '&');
+    //------------------------- TROUVER LA LIGNE CONTENANT DATA
+    std::string line;
+    while (getline(stream, line))
+    {
+        if ((line.size() == 1 && line.at(0) == '\0')
+            || (line.size() == 1 && line == "\r"))
+        {
+            getline(stream, this->_dataPost);
+            break ;
+        }
+    }
+//------------------ PARSER LA LIGNE POUR RECUPERER LES DONNEES FORM
+    tmp = splitString(this->_dataPost, '&');
     for (it = tmp.begin(); it != tmp.end(); ++it){
         std::stringstream ss(*it);
         std::string key;
@@ -122,40 +136,33 @@ std::string Request::printDataForm(){
     return (tmp);
 }
 
-void Request::generateHtmlPage() {
-    std::ofstream htmlFile(this->_finalPath.c_str());
+std::string Request::generateHtmlPage(std::string title, std::string body) {
 
-    if (htmlFile.is_open()) {
-        htmlFile << "<!DOCTYPE html>\n";
-        htmlFile << "<html lang=\"en\">\n";
-        htmlFile << "<head>\n";
-        htmlFile << "<meta charset=\"UTF-8\">\n";
-        htmlFile << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
-        htmlFile << "<title>Page Personnalisée</title>\n";
-        htmlFile << "</head>\n";
-        htmlFile << "<body>\n";
-        htmlFile << "<h1>Bonjour, " << "Donnees du formulaire:" << "</h1>\n";
-        htmlFile << this->printDataForm();
-        htmlFile << "</body>\n";
-        htmlFile << "</html>\n";
-
-        htmlFile.close();
-        std::cout << "La page HTML a été générée avec succès !\n";
-    } else {
-        std::cerr << "Impossible de créer le fichier HTML.\n";
-    }
+    std::string htmlContent;
+    htmlContent += "<!DOCTYPE html>\n";
+    htmlContent += "<html lang=\"en\">\n";
+    htmlContent += "<head>\n";
+    htmlContent += "<meta charset=\"UTF-8\">\n";
+    htmlContent += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
+    htmlContent += "<title>" + title + "</title>\n";
+    htmlContent += "</head>\n";
+    htmlContent += "<body>\n";
+    htmlContent += body;
+    htmlContent += "</body>\n";
+    htmlContent += "</html>\n";
+    return (htmlContent);
 }
 
 
-void    Request::startPost(){
-    if (this->_contentType == "application/x-www-form-urlencoded"){ //form
-            this->parseDataPost(this->_dataPost);
-            this->generateHtmlPage();
-    }
+void    Request::startPost(std::istringstream &stream){
+    if (this->_contentType == "application/x-www-form-urlencoded")
+        this->getInfoForm(stream);
 
     else if (this->_contentType == "multipart/form-data")
     {
-        std::cout <<"OK" << std::endl;
+        std::cout << "Je veux faure un upload" << std::endl;
+        std::vector<std::string> tmp = splitString(this->_boundary, '=');
+        this->sendFileToServ(stream, tmp[1]);
     }
 }
 
@@ -167,28 +174,14 @@ void    Request::getLengthContent(std::string &line){
     }
 }
 
-void Request::parsePostForm(std::istringstream& stream)
-{
-    std::string line;
-    while (getline(stream, line))
-    {
-        if ((line.size() == 1 && line.at(0) == '\0')
-            || (line.size() == 1 && line == "\r"))
-        {
-            getline(stream, this->_dataPost);
-            break ;
-        }
-    }
-}
-
 void    Request::sendFileToServ(std::istringstream& stream, std::string boundary){
     std::string line;
     boundary = "--" + boundary;
     while (getline(stream, line))
     {
-        // std::cout << "line esttttttttttttttttttttttt: " << line << std::endl;
-       if (line == boundary + "--") 
+        if (line == boundary + "--") 
             break ;
+        // Pour recuperer le nom du fichier a envoyer sur le serveur
         if (strncmp(line.c_str(), "Content-Disposition:", 20) == 0){
             std::vector<std::string>tmp = splitString(line.c_str(), ' ');
             std::vector<std::string>tmp1 = splitString(tmp[3], '=');
@@ -200,12 +193,28 @@ void    Request::sendFileToServ(std::istringstream& stream, std::string boundary
     if (!this->_nameFile.empty())
     {
         std::string body = this->getContentFile(boundary);
-        this->_nameFile = this->_finalPath + this->_nameFile;
-        std::cout << "nameFile -> " << this->_nameFile << std::endl;
-        // std::ofstream file(this->)
+        if (this->_finalPath.at(this->_finalPath.size() - 1) != '/')
+            this->_finalPath.insert(this->_finalPath.size(), "/");
+        this->_nameFile = this->_finalPath + this->_nameFile; // ptetre changer finalpath par un dossier par defaut
+        if (!body.empty()){
+            std::ofstream htmlFile(this->_nameFile.c_str(), std::ios::binary);
+            if (htmlFile.is_open())
+            {
+                htmlFile.write(body.c_str(), body.size());
+                htmlFile.close();
+                this->_htmlContent = this->generateHtmlPage("Upload Success",
+                    "<h1>File " + this->_nameFile + " uploaded ! </h1>");               
+            }
+            else
+            {
+                this->_htmlContent = this->generateHtmlPage("Upload Failed",
+                    "<h1>Upload of file " + this->_nameFile + " error ! </h1>");               
+            }
+        }
     }
 }
-std::string Request::getContentFile(std::string boundary)
+
+std::string Request::getContentFile(std::string &boundary)
 {
     size_t startBody = this->_buffer.find("\r\n\r\n") + 4;
     if (startBody != std::string::npos)
@@ -221,13 +230,13 @@ std::string Request::getContentFile(std::string boundary)
             {
                 return (this->_buffer.substr(0, end));
             }
-            else
-                return (this->_buffer.substr(startBody));
         }
     }
     return ("");
 }
-void    Request::parsePost(){
+
+
+void    Request::getInfoPost(){ 
     std::string line;
     std::istringstream stream(this->_buffer);
 
@@ -235,70 +244,41 @@ void    Request::parsePost(){
     {
         line[line.size() - 1] = '\0';
         if (strncmp("Content-Length", line.c_str(), 14) == 0)
+        {
+            if (!this->_contentLength.empty())
+                break ;
             this->getLengthContent(line);
+        }
         else if (strncmp("Content-Type", line.c_str(), 12) == 0){
-            std::cout << "line -> " << line << std::endl;
+            if (!this->_contentType.empty())
+                break ;
             std::vector<std::string> args = splitString(line, ' ');
             this->_contentType = args[1];
             if (this->_contentType.at(this->_contentType.size() - 1 == '\0'))
                 this->_contentType.resize(this->_contentType.size() - 1);
-            // std::cout << "CONTENT TYPE -> " << this->_contentType << std::endl;
-            if (this->_contentType == "application/x-www-form-urlencoded") //OK
-                this->parsePostForm(stream);
-            else if (this->_contentType == "multipart/form-data") //on sait que on veut envoyer des donnees vers le serveur
-            {
-                std::cout << "args[2] -> " << args[2] << std::endl;
-                std::vector<std::string> tmp = splitString(args[2], '=');
-                std::cout << "Mon boundary = " << tmp[1] << std::endl;
-                this->sendFileToServ(stream, tmp[1]);
-            }
-            else if (this->_contentType == "application/json")
-            {
-                // JSON
-                std::cout << "WIP" << std::endl;
-            }
-            else if (this->_contentType == "application/xml")
-            {
-                // XML
-                std::cout << "WIP" << std::endl;
-            }
-            else if (this->_contentType == "text/plain")
-            {
-                // TEXTE BRUT
-                std::cout << "WIP" << std::endl;
-            }
-            else if (this->_contentType == "application/javascript")
-            {
-                // JS
-                std::cout << "WIP" << std::endl;
-            }
-            else if (this->_contentType == "image/png" || "image/jpeg" || "image/gif" )
-            {
-                // IMG
-                std::cout << "WIP" << std::endl;
-            }
-
+            std::cout << "Content-Type -> " << this->_contentType << std::endl;
+            if (args.size() == 3)
+                this->_boundary = args[2];
         }
     }
 }
 
-void    Request::selectMethod(){
+void    Request::selectMethod(std::istringstream &stream, Route *route){
 
-    if (this->_method == "POST"){
-        this->parsePost();
-        this->startPost();
-    }
-    this->_htmlContent = this->readRequest();
-
+    if (this->_method == POST)
+        (this->getInfoPost(), this->startPost(stream));
+    else if (this->_method == GET)
+        this->_htmlContent = this->checkRequest(route);
+    else if (this->_method == DELETE)
+        std::cout << "DELETE PAS ENCORE GERE" << std::endl;
 }
 
-void     Request::checkRequest(Route *route){
+std::string     Request::checkRequest(Route *route){
 
     if (!route)
-        return ;
-    this->initFinalPath(route);
+        return "";
     if (isFile(this->_finalPath))
-        this->selectMethod();
+        return (this->readRequest());
     else if (isDirectory(this->_finalPath))
     {
         if (!route->getIndex().empty()){
@@ -306,11 +286,12 @@ void     Request::checkRequest(Route *route){
                 this->_finalPath += route->getIndex();
             else
                 this->_finalPath += "/" + route->getIndex();
-            this->selectMethod();
+            return (this->readRequest());
         }
         else if (route->getAutoIndex() == 1)
-            this->listDir(route);
+            return (this->listDir(route));
     }
+    return ("");
 }
 
 std::vector<std::string> Request::doSplit(const std::string& str, char delimiter){
@@ -351,17 +332,14 @@ Route *Request::findLocation(){
         if (rootToken.size() <= 0)
             break ;
         std::string tmp;
-        for (size_t i = 0; i < rootToken.size() - 1; ++i) {
+        for (size_t i = 0; i < rootToken.size() - 1; ++i)
             tmp += rootToken[i];
-        }
         this->_copyRequest = tmp;
         this->_saveRequest.insert(0, rootToken[rootToken.size() - 1]);
         rootToken.pop_back();
     }
     if (it == tmp.end())
-    {
         return (NULL);
-    }
     return (it->second);
 }
 
@@ -372,8 +350,12 @@ void    Request::getInfoRequest(std::string &line){
     std::string token;
 
     while (ss >> token){
-        if (token == "GET" || token == "POST" || token == "DELETE")
-            this->_method = token;
+        if (token == "GET")
+            this->_method = GET;
+        else if (token == "POST")
+            this->_method = POST;
+        else if (token == "DELETE")
+            this->_method = DELETE;
         else if (token[0] == '/')
             this->_request = token;
         else if (token == "HTTP/1.1")
@@ -398,7 +380,7 @@ void Request::sendResponse(std::string htmlContent){
 
     ssize_t bytes_sent = send(this->_client->getFd(), response.c_str(), response.size(), 0);
     if (bytes_sent < 0) {
-        perror("send");
+        strerror(errno);
         this->_client->disconnect();
         delete this->_client;
         this->_client = NULL;
@@ -411,34 +393,34 @@ void    Request::handleRequest(){
     std::istringstream stream(this->_buffer);
     Route *ptr = NULL;
 
-    std::cout << "AFFICHAGE DU BUFFER" << std::endl;
-    std::cout << this->_buffer << std::endl;
     if (std::getline(stream, line)){
         this->getInfoRequest(line);
-        // if (!this->_request.empty()){
-            if ((ptr = this->findLocation()) != NULL)
+        if (this->_version != "HTTP/1.1")
+            return ; //code erreur qui correspond a la version
+        if ((ptr = this->findLocation()) != NULL)
+        {
+            std::vector<Method> tmp = ptr->getMethods();
+            if (std::find(tmp.begin(), tmp.end(), this->_method) == tmp.end())
             {
-                this->checkRequest(ptr);
-                if (!this->_htmlContent.empty())
-                {
-                    this->sendResponse(this->_htmlContent);
-                }
-                else
-                {
-                    std::cout << "error" << std::endl;
-                    this->_finalPath = "test/error/404.html";
-                    this->_htmlContent = this->readRequest();
-                    this->sendResponse(this->_htmlContent);
-                }
+                return ; // Code d'erreur method pas accepte
             }
+            this->initFinalPath(ptr);
+            this->selectMethod(stream, ptr);
+            if (!this->_htmlContent.empty() || this->_htmlContent == "")
+                this->sendResponse(this->_htmlContent);
             else
             {
-                // ERROR 400
-                std::cout << "error (2)" << std::endl;
                 this->_finalPath = "test/error/404.html";
                 this->_htmlContent = this->readRequest();
                 this->sendResponse(this->_htmlContent);
             }
-        // }
+        }
+        else
+        {
+            // ERROR 400
+            this->_finalPath = "test/error/404.html";
+            this->_htmlContent = this->readRequest();
+            this->sendResponse(this->_htmlContent);
+        }
     }
 }

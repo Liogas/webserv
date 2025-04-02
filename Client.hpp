@@ -2,6 +2,8 @@
 # define CLIENT_HPP
 
 # include "Server.hpp"
+# include <errno.h>
+# include <string.h>
 
 class Server;
 
@@ -12,6 +14,7 @@ class Client
         ~Client();
         void disconnect();
         bool addBuffer(std::string, ssize_t bytesRead);
+        void resetBuffer(void);
         // GETTERS
         int getFd(void) const;
         std::string getBuffer(void) const;

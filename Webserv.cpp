@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "Webserv.hpp"
+#include <fcntl.h>
 
 # define MAX_CLIENTS 5
 # define BUFFER_SIZE 64000
@@ -92,7 +93,7 @@ bool Webserv::ready(void)
     this->_epollFd = epoll_create1(0);
     if (this->_epollFd == -1)
     {
-        perror("epoll_create1");
+        strerror(errno);
         return (false);
     }
     for (std::vector<Server *>::iterator it = this->_servers.begin();
@@ -107,7 +108,7 @@ bool Webserv::ready(void)
         {
             std::string error = "[!Server "
                 + toString((*it)->getFd()) + "!] epoll_ctl";
-            perror(error.c_str());
+            strerror(errno);
             delete *it;
             nbError++;
             it = this->_servers.erase(it);
@@ -140,7 +141,7 @@ bool Webserv::start(void)
         int nfds = epoll_wait(this->_epollFd, events, MAX_CLIENTS, -1);
         if (nfds == -1)
         {
-            perror("epoll_wait");
+            strerror(errno);
             return (false);
         }
         for (int i = 0; i < nfds; i++)
@@ -162,16 +163,7 @@ bool Webserv::start(void)
     return (true);
 }
 
-/*
-    Methode utile pour gerer un evenement provenant d'un client.
-    Dans un premier on cherche le serveur sur lequel il se trouve.
-    Ensuite on recupere la requete envoye par le client avec recv.
-    - Si bytes_read = 0 le client s'est deconnecte du serveur
-    - Si < 0 erreur lors de l'appel de recv
-    - Sinon recv s'est bien passe et la requete stockee dans le buffer.
-    Ensuite il faudra appeler la fonction de Loreen avec le client, le buffer et
-    le serveur en parametre.
-*/
+
 
 bool Webserv::handleClient(int clientFd)
 {
@@ -191,9 +183,7 @@ bool Webserv::handleClient(int clientFd)
     }
     Client *client = it->second;
     char buffer[BUFFER_SIZE] = {0};
-    size_t bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
-    std::cout << "BUFFER DE RECV : "<< std::endl;
-    std::cout << buffer << std::endl;
+    ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
     if (bytesRead == 0)
     {
         serv->eraseClient(it->first);
@@ -204,124 +194,18 @@ bool Webserv::handleClient(int clientFd)
     // ERROR RECV
     else if (bytesRead < 0)
     {
-        perror("recv");
-        std::cout << errno << std::endl;
+        strerror(errno);
         return (false);
     }
-    if (client->addBuffer(buffer, bytesRead))
+    std::string tmp(buffer, bytesRead);
+    if (client->addBuffer(tmp, bytesRead))
     {
         Request req(client->getBuffer(), serv, client);
         req.handleRequest();
+        client->resetBuffer();
     }
     return (true);
 }
-
-// bool Webserv::handleClient(int clientFd)
-// {
-//     Server *serv = this->whereIsClient(clientFd);
-//     if (!serv)
-//     {
-//         std::cerr << "client " << clientFd
-//             << " unknown" << std::endl;
-//         return (false);
-//     }
-//     std::map<int, Client *> clients = serv->getClients();
-//     std::map<int, Client *>::iterator it = clients.find(clientFd);
-//     if (it == clients.end())
-//     {
-//         std::cerr << "ERROR REALLY STRANGE" << std::endl;
-//         return (false);
-//     }
-//     Client *client = it->second;
-
-//     std::string bufferAll;
-//     std::string header;
-//     std::string body;
-//     // ssize_t bytesAll = 0;
-//     size_t contentLength = 0;
-//     size_t bytes = 0;
-//     char buffer[BUFFER_SIZE] = {0};
-//     ssize_t bytesRead = 0;
-//     while (1)
-//     {
-//         buffer[0] = 0;
-//         bytes_read = recv(clientFd, buffer, sizeof(buffer) -1, MSG_DONTWAIT);
-//         bytes+= bytes_read;
-//         std::cout << "total read = " << bytes << std::endl; 
-//         // CLIENT DISCONNECT
-//         if (bytes_read == 0)
-//         {
-//             serv->eraseClient(it->first);
-//             client->disconnect();
-//             delete client;
-//             return (true);
-//         }
-//         // ERROR RECV
-//         else if (bytes_read < 0)
-//         {
-//             perror("recv");
-//             std::cout << errno << std::endl;
-//             return (false);
-//         }
-//         if (contentLength == 0) //Traiter les en ttes
-//         {
-//             header += buffer;
-//             size_t posEmpty = header.find("\r\n\r\n");
-//             if (posEmpty != std::string::npos)
-//             {
-//                 bytes =  bytes - posEmpty;
-//                 size_t pos = header.find("Content-Length:");
-//                 if (pos != std::string::npos) //POST
-//                 {
-//                     pos += 15;  // Passer "Content-Length: "
-//                     size_t end = header.find("\r\n", pos); // Trouver la fin de la valeur de Content-Length
-//                     if (end != std::string::npos)
-//                     {
-                        
-//                         std::cout << "pos empty" << posEmpty << std::endl;
-                       
-                        
-//                     }
-//                     // Extraire le body à partir de la fin des en-têtes
-//                     body = header.substr(posEmpty + 4); // +4 pour sauter "\r\n\r\n"
-//                     header.erase(0, posEmpty + 4); // Enlever le header de l'objet header
-//                     bytes -= header.size();
-//                     std::cout << "header size -> " << header.size() << std::endl;
-//                     std::cout << "---- HEADER ---- " << std::endl;
-//                     std::cout << header << std::endl;
-//                     std::cout << "---END HEADER---"  << std::endl;
-//                     std::cout << "Contenu de mon body a ce moment -> " << body << " -> " << body.size() << std::endl;
-//                     if (bytes >= contentLength)
-//                         break ;
-//                 }
-//                 else  // METHOD GET
-//                     break ;
-//             }
-//         }
-//         else
-//         {
-//             body += buffer;
-            
-//             std::cout << "contentLength = " << contentLength << "       body size= " << body.size() << "     ";
-//             if (bytes >= contentLength)
-//             {
-                
-//                 break ;
-//             }
-//         }
-//     }
-//     std::cout << "tooooooooz" << std::endl;
-//     bytes_read = recv(clientFd, buffer, sizeof(buffer) -1, MSG_DONTWAIT);
-
-//     std::cout << buffer<< std::endl;
-//     bufferAll = header + body;
-//     bufferAll[bufferAll.size()] = '\0';
-//     // CLIENT PART
-//     Request req(bufferAll, serv, client);
-//     req.handleRequest();
-//     return (true);
-// }
-
 
 /*
     Methode qui prend le fd du client recherche en parametre.

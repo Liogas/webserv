@@ -17,6 +17,11 @@
 # include "Server.hpp"
 # include "Request.hpp"
 
+typedef struct s_req
+{
+    std::string header;
+    char *body;
+}   t_req;
 
 class Webserv
 {
@@ -32,9 +37,12 @@ class Webserv
         bool handleClient(int clientFd);
         Server *whereIsClient(int fdClient);
         std::vector<Server *> getServers() const;
-    private:
+        int whereStartBody(std::string);
+        private:
         std::vector<Server *> _servers;
         int _epollFd;
+        std::vector<char> _body;
+        bool _headerOk;
 };
 
 #endif

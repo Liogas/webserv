@@ -49,7 +49,7 @@ bool Server::init(void)
     if (this->_fd == -1)
     {
         std::string error = "[!Server " + toString(this->getFd()) + "!] socket";
-        perror(error.c_str());
+        strerror(errno);
         return (false);
     }
     int reuse = 1;
@@ -75,13 +75,13 @@ bool Server::bindSocket(int maxClient)
             sizeof(this->_address)) == -1)
     {
         std::string error = "[!Server " + toString(this->getFd()) + "!] bind";
-        perror(error.c_str());
+        strerror(errno);
         return (false);
     }
     if (listen(this->_fd, maxClient) == -1)
     {
         std::string error = "[!Server " + toString(this->getFd()) + "!] listen";
-        perror(error.c_str());
+        strerror(errno);
         return (false);
     }
     std::cout << "[Server " << this->_fd << "] Listening on port "
@@ -103,7 +103,7 @@ bool Server::newClient(void)
     fcntl(client_fd, F_SETFL, O_NONBLOCK);
     if (client_fd == -1)
     {
-        perror("accept");
+        strerror(errno);
         return (false);
     }
     try
