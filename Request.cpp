@@ -23,6 +23,11 @@ Request::~Request(){
 
 }
 
+void Request::addBuffer(std::string buffer, ssize_t bytes)
+{
+    this->_buffer.append(buffer, bytes);
+}
+
 std::string    Request::readRequest(){
     std::ifstream file(this->_finalPath.c_str());
     std::ostringstream contentStream;
@@ -392,7 +397,7 @@ void    Request::handleRequest(){
     std::string htmlContent;
     std::istringstream stream(this->_buffer);
     Route *ptr = NULL;
-
+    std::cout << this->_buffer << std::endl;
     if (std::getline(stream, line)){
         this->getInfoRequest(line);
         if (this->_version != "HTTP/1.1")

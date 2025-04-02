@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/08 19:49:21 by glions            #+#    #+#             */
-/*   Updated: 2025/03/24 10:26:38 by glions           ###   ########.fr       */
+/*   Updated: 2025/04/02 13:01:08 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,8 +29,11 @@ std::vector<std::string> splitString(const std::string str, char sep)
 
 bool isValidExtension(const std::string &filename, const std::string &extension)
 {
+    size_t i = 0;
+    if (filename.at(0) == '.')
+        i = 1;
     bool point = false;
-    for (size_t i = 0; i < filename.size(); i++)
+    for (; i < filename.size(); i++)
     {
         if (point == false && filename.at(i) == '.')
             point = true;

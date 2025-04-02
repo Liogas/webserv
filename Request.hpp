@@ -48,6 +48,7 @@ public:
         //Setter
 
         //Public Methods
+        void                        addBuffer(std::string buffer, ssize_t bytes);
         void                        handleRequest(void);
         void                        getInfoRequest(std::string &line);
         Route                      *findLocation();

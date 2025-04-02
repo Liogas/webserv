@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/03/31 11:14:09 by glions           ###   ########.fr       */
+/*   Updated: 2025/04/02 15:06:47 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,7 +136,6 @@ bool Webserv::start(void)
 {
     while (1)
     {
-        std::cout << "De nouveau ici" << std::endl;
         struct epoll_event events[10];
         int nfds = epoll_wait(this->_epollFd, events, MAX_CLIENTS, -1);
         if (nfds == -1)
@@ -198,6 +197,10 @@ bool Webserv::handleClient(int clientFd)
         return (false);
     }
     std::string tmp(buffer, bytesRead);
+    if (!client->getCurrReq())
+        client->newRequest(tmp);
+    else
+        client->addBuffer(tmp, bytesRead);
     if (client->addBuffer(tmp, bytesRead))
     {
         Request req(client->getBuffer(), serv, client);

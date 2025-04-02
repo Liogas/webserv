@@ -2,7 +2,8 @@
 
 Client::Client(int fd, Server &serv) : 
     _serv(serv),
-    _fd(fd)
+    _fd(fd),
+    _currReq(NULL)
 {
     struct epoll_event event = {};
     event.events = EPOLLIN;
@@ -19,6 +20,8 @@ Client::Client(int fd, Server &serv) :
 
 Client::~Client()
 {
+    if (this->_currReq)
+        delete this->_currReq;
 }
 
 void Client::disconnect(void)
@@ -27,6 +30,21 @@ void Client::disconnect(void)
     std::cout << "[Server "<< this->_serv.getFd() << "] client disconnected : "
         << this->_fd << std::endl;
     close(this->_fd);
+}
+
+void Client::newRequest(std::string buffer)
+{
+    this->_currReq = new Request(buffer, &this->_serv, this);
+}
+
+void Client::updateRequest(std::string buffer, ssize_t bytes)
+{
+    this->_currReq->addBuffer(buffer, bytes);
+}
+
+Request *Client::getCurrReq(void) const
+{
+    return (this->_currReq);
 }
 
 void Client::resetBuffer(void)
