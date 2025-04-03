@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/04/02 15:06:47 by glions           ###   ########.fr       */
+/*   Updated: 2025/04/03 10:03:54 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -200,13 +200,22 @@ bool Webserv::handleClient(int clientFd)
     if (!client->getCurrReq())
         client->newRequest(tmp);
     else
-        client->addBuffer(tmp, bytesRead);
-    if (client->addBuffer(tmp, bytesRead))
+        client->updateRequest(tmp, bytesRead);
+    if (client->requestReady())
     {
-        Request req(client->getBuffer(), serv, client);
-        req.handleRequest();
-        client->resetBuffer();
+        int error;
+        if ((error = client->parseRequest()) != 0)
+        {
+            std::cerr << "ERROR PARSING REQUETE -> " << error << std::endl;
+            return (false);
+        }
     }
+    // if (client->addBuffer(tmp, bytesRead))
+    // {
+    //     Request req(client->getBuffer(), serv, client);
+    //     req.handleRequest();
+    //     client->resetBuffer();
+    // }
     return (true);
 }
 

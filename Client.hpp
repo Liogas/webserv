@@ -20,6 +20,8 @@ class Client
         void deleteRequest(void);
         bool addBuffer(std::string, ssize_t bytesRead);
         void resetBuffer(void);
+        int parseRequest(void);
+        bool requestReady(void);
         // GETTERS
         int getFd(void) const;
         std::string getBuffer(void) const;

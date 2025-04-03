@@ -12,6 +12,15 @@ Request::Request(std::string buffer, Server *serv, Client *client) :
     _buffer(buffer),
     _copyRequest(),
     _saveRequest(),
+    _contentType(),
+    _contentLength(),
+    _boundary(),
+    _dataPost(),
+    _nameFile(),
+    _header(),
+    _body(),
+    _bytesRead(0),
+    _contentLength2(-1),
     _server(serv),
     _client(client)   
 {
@@ -26,6 +35,128 @@ Request::~Request(){
 void Request::addBuffer(std::string buffer, ssize_t bytes)
 {
     this->_buffer.append(buffer, bytes);
+}
+
+std::string Request::getBuffer(void) const
+{
+    return (this->_buffer);
+}
+
+int Request::getContentLength2(void) const
+{
+    return (this->_contentLength2);
+}
+
+int Request::getBytes(void) const
+{
+    return (this->_bytesRead);
+}
+
+void Request::setBytes(int value)
+{
+    this->_bytesRead = value;
+}
+
+void Request::setContentLength2(int value)
+{
+    this->_contentLength2 = value;
+}
+
+void Request::setHeader(std::string header)
+{
+    this->_header = header;
+}
+
+void Request::setBody(std::string body)
+{
+    this->_body = body;
+}
+
+int Request::parseRequest(std::string request)
+{
+    std::stringstream ss(request);
+    std::string token;
+    
+    while (ss >> token){
+        if (token == "GET")
+            this->_method = GET;
+        else if (token == "POST")
+            this->_method = POST;
+        else if (token == "DELETE")
+            this->_method = DELETE;
+        else if (token[0] == '/')
+            this->_url = token;
+        else if (token == "HTTP/1.1")
+            this->_version = token;
+        else
+            return (400);
+    }
+    if (this->_url.size() > 8192)
+        return (414);
+    Route *route = this->findLocation();
+    if (route == NULL)
+        return (404);
+    std::vector<Method>::iterator it = std::find(route->getMethods().begin(), route->getMethods().end(), this->_method);
+    if (it == route->getMethods().end())
+        return (405);
+    if (this->_version != "HTTP/1.1")
+        return (505);
+    return (0);
+}
+
+int Request::parseHost(std::string host)
+{
+    std::vector<std::string> args = splitString(host, ' ');
+    if (args.size() != 2 ||
+        args[1] != this->_server->getConfig()->getServerName())
+        return (400);
+    this->_hostName = args[1];
+    return (0);
+}
+
+int Request::parseAccept(std::string accept)
+{
+    accept.erase(0, 8);
+    std::vector<std::string> args = splitString(accept, ',');
+    if (args.size() < 1)
+        return (400);
+    for (size_t i = 0; i < args.size(); i++)
+            args[i].erase(std::remove(args[i].begin(), args[i].end(), ' '),
+                args[i].end());
+    this->_accept = args;
+    return (0);
+}
+
+int Request::parseHeader(void)
+{
+    std::string line;
+    std::istringstream stream(this->_header);
+    int error;
+    if (std::getline(stream, line) && (error = parseRequest(line)) != 0)
+        return (error);
+    while (std::getline(stream, line))
+    {
+        if (!line.compare(0, 5, "Host:") && (error = parseHost(line)) != 0)
+            return (error);
+        else if (!line.compare(0, 8, "Accept:") && (error = parseAccept(line)) != 0)
+            return (error);
+        else if (!line.compare(0, 12, "User-Agent:"))
+            this->_agent = line.substr(13);
+        else if (!line.compare(0, 14, "Content-Type:"))
+            this->_contentType = line.substr(15);
+        else if (!line.compare(0, 12, "Connection:"))
+            this->_connection = line.substr(13);
+        else if (!line.compare(0, 19, "Transfer-Encoding"))
+            this->_transferEncoding = true;
+        else
+        {
+            std::cerr << "Ligne du header pas geree : " << line << std::endl;
+            return (400);
+        }
+    }
+    if (this->_transferEncoding && this->_contentLength2 != -1)
+        return (400);
+    return (0);
 }
 
 std::string    Request::readRequest(){

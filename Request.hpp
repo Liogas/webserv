@@ -30,6 +30,18 @@ class Request {
     std::string _boundary;
     std::string _dataPost;
     std::string _nameFile;
+
+
+    std::string _header;
+    std::string _body;
+    int         _bytesRead;
+    int         _contentLength2;
+    std::string _url;
+    std::string _agent;
+    std::string _connection;
+    bool        _transferEncoding;
+    std::vector<std::string> _accept;
+
     Server      *_server;
     Client      *_client;
     std::map<std::string, std::string> dataForm;
@@ -44,10 +56,19 @@ public:
         //Operator Loaded
 
         //Getters
-
+        std::string getBuffer(void) const;
+        int getContentLength2(void) const;
+        int getBytes(void) const;
         //Setter
-
+        void setBytes(int value);
+        void setContentLength2(int value);
+        void setHeader(std::string header);
+        void setBody(std::string body);
         //Public Methods
+        int                         parseAccept(std::string accept);
+        int                         parseHost(std::string host);
+        int                         parseRequest(std::string request);
+        int                         parseHeader(void);
         void                        addBuffer(std::string buffer, ssize_t bytes);
         void                        handleRequest(void);
         void                        getInfoRequest(std::string &line);
