@@ -8,6 +8,7 @@
 # include <string.h>
 
 class Server;
+class Request;
 
 class Client
 {
@@ -15,7 +16,7 @@ class Client
         Client(int fd, Server &serv);
         ~Client();
         void disconnect();
-        void newRequest(std::string buffer);
+        void newRequest(std::string buffer, ssize_t bytes);
         void updateRequest(std::string buffer, ssize_t bytes);
         void deleteRequest(void);
         bool addBuffer(std::string, ssize_t bytesRead);

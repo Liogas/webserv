@@ -11,44 +11,50 @@
 #include <cstring>
 
 # include "Server.hpp"
+# include "Route.hpp"
 
 class Routes;
+class Server;
+class Client;
 
 class Request {
     private:
-    Method _method;
     std::string _request;
-    std::string _version;
-    std::string _hostName;
     std::string _finalPath;
     std::string _htmlContent;
     std::string _buffer;
     std::string _copyRequest;
     std::string _saveRequest;
-    std::string _contentType;
     std::string _contentLength;
     std::string _boundary;
     std::string _dataPost;
     std::string _nameFile;
 
 
+    Method      _method;
+    std::string _version;
+    std::string _hostName;
     std::string _header;
     std::string _body;
     int         _bytesRead;
     int         _contentLength2;
     std::string _url;
+    std::string _contentType;
     std::string _agent;
     std::string _connection;
     bool        _transferEncoding;
-    std::vector<std::string> _accept;
+    std::string _accept;
+    std::string _acceptLanguage;
+    std::string _acceptEncoding;
 
+    Route       *_route;
     Server      *_server;
     Client      *_client;
     std::map<std::string, std::string> dataForm;
 
 public:
         //Constructors
-        Request(std::string buffer, Server *serv, Client *client);
+        Request(std::string buffer, ssize_t bytes, Server *serv, Client *client);
 
         //Destructor
         ~Request();
@@ -65,7 +71,7 @@ public:
         void setHeader(std::string header);
         void setBody(std::string body);
         //Public Methods
-        int                         parseAccept(std::string accept);
+        void                        print(void);
         int                         parseHost(std::string host);
         int                         parseRequest(std::string request);
         int                         parseHeader(void);

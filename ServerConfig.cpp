@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/11 11:04:34 by glions            #+#    #+#             */
-/*   Updated: 2025/03/24 14:39:29 by glions           ###   ########.fr       */
+/*   Updated: 2025/04/04 12:55:58 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -175,9 +175,11 @@ void ServerConfig::setClientMaxBody(std::vector<std::string> args)
         switch (u)
         {
             case 'G' :
-                num = num * 1024;
+                num = num * 1024 * 1024 * 1024;
+                break ;
             case 'M' :
-                num = num * 1024;
+                num = num * 1024 * 1024;
+                break ;
             case 'K' :
                 num = num * 1024;
                 break;

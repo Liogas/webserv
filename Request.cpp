@@ -2,27 +2,33 @@
 #include <string>
 
 //Constructors
-Request::Request(std::string buffer, Server *serv, Client *client) :
-    _method(),
+Request::Request(std::string buffer, ssize_t bytes, Server *serv, Client *client) :
     _request(),
-    _version(),
-    _hostName(),
     _finalPath(),
     _htmlContent(),
     _buffer(buffer),
     _copyRequest(),
     _saveRequest(),
-    _contentType(),
     _contentLength(),
     _boundary(),
     _dataPost(),
     _nameFile(),
+    _method(),  
+    _version(),
+    _hostName(),
     _header(),
     _body(),
-    _bytesRead(0),
+    _bytesRead(bytes),
     _contentLength2(-1),
+    _url(),
+    _contentType(),
+    _agent(),
+    _connection(),
+    _transferEncoding(),
+    _accept(),
+    _route(NULL),
     _server(serv),
-    _client(client)   
+    _client(client)
 {
 
 }
@@ -34,7 +40,7 @@ Request::~Request(){
 
 void Request::addBuffer(std::string buffer, ssize_t bytes)
 {
-    this->_buffer.append(buffer, bytes);
+    this->_buffer.append(buffer, this->_buffer.size(), bytes);
 }
 
 std::string Request::getBuffer(void) const
@@ -72,6 +78,34 @@ void Request::setBody(std::string body)
     this->_body = body;
 }
 
+void Request::print(void)
+{
+    std::cout << "Method             : " << this->_method << std::endl;
+    std::cout << "Url                : " << this->_url << std::endl;
+    std::cout << "Version            : " << this->_version << std::endl;
+    std::cout << "Host               : " << this->_hostName << std::endl;
+    std::cout << "User_Agent         : " << this->_agent << std::endl;
+    std::cout << "Accept             : " << this->_accept << std::endl;
+    std::cout << "AcceptLanguage     : " << this->_acceptLanguage << std::endl;
+    std::cout << "AcceptEncoding     : " << this->_acceptEncoding << std::endl;
+    std::cout << "Connection         : " << this->_connection << std::endl;
+    if (this->_contentLength2 != -1)
+        std::cout << "Content-Length     : " << this->_contentLength2 << std::endl;
+    if (this->_transferEncoding)
+        std::cout << "Transfert-Encoding : true" << std::endl;
+    if (!   this->_contentType.empty())
+        std::cout << "ContentType        : " << this->_contentType << std::endl;
+    if (!this->_boundary.empty())
+        std::cout << "Boundary           : " << this->_boundary << std::endl;
+    std::cout << std::endl;
+    std::cout << "----- HEADER -----" << std::endl;
+    std::cout << this->_header << std::endl << std::endl;
+    std::cout << "------------------" << std::endl;
+    std::cout << "----- BODY -----" << std::endl;
+    std::cout << this->_body << std::endl << std::endl;
+    std::cout << "----------------" << std::endl;
+}
+
 int Request::parseRequest(std::string request)
 {
     std::stringstream ss(request);
@@ -93,11 +127,12 @@ int Request::parseRequest(std::string request)
     }
     if (this->_url.size() > 8192)
         return (414);
-    Route *route = this->findLocation();
-    if (route == NULL)
+    this->_route = this->findLocation();
+    if (this->_route == NULL)
         return (404);
-    std::vector<Method>::iterator it = std::find(route->getMethods().begin(), route->getMethods().end(), this->_method);
-    if (it == route->getMethods().end())
+    std::vector<Method> methods = this->_route->getMethods();
+    std::vector<Method>::iterator it = std::find(methods.begin(), methods.end(), this->_method);
+    if (it == this->_route->getMethods().end())
         return (405);
     if (this->_version != "HTTP/1.1")
         return (505);
@@ -107,23 +142,12 @@ int Request::parseRequest(std::string request)
 int Request::parseHost(std::string host)
 {
     std::vector<std::string> args = splitString(host, ' ');
-    if (args.size() != 2 ||
-        args[1] != this->_server->getConfig()->getServerName())
+    if (args.size() != 2)
         return (400);
-    this->_hostName = args[1];
-    return (0);
-}
-
-int Request::parseAccept(std::string accept)
-{
-    accept.erase(0, 8);
-    std::vector<std::string> args = splitString(accept, ',');
-    if (args.size() < 1)
+    args = splitString(args[1], ':');
+    if (args[0] != this->_server->getConfig()->getServerName())
         return (400);
-    for (size_t i = 0; i < args.size(); i++)
-            args[i].erase(std::remove(args[i].begin(), args[i].end(), ' '),
-                args[i].end());
-    this->_accept = args;
+    this->_hostName = args[0];
     return (0);
 }
 
@@ -133,25 +157,32 @@ int Request::parseHeader(void)
     std::istringstream stream(this->_header);
     int error;
     if (std::getline(stream, line) && (error = parseRequest(line)) != 0)
+    {
+        std::cerr << "ERROR REQUEST LINE -> " << error << std::endl;
         return (error);
+    }
     while (std::getline(stream, line))
     {
         if (!line.compare(0, 5, "Host:") && (error = parseHost(line)) != 0)
             return (error);
-        else if (!line.compare(0, 8, "Accept:") && (error = parseAccept(line)) != 0)
-            return (error);
-        else if (!line.compare(0, 12, "User-Agent:"))
-            this->_agent = line.substr(13);
-        else if (!line.compare(0, 14, "Content-Type:"))
-            this->_contentType = line.substr(15);
-        else if (!line.compare(0, 12, "Connection:"))
-            this->_connection = line.substr(13);
-        else if (!line.compare(0, 19, "Transfer-Encoding"))
+        else if (!line.compare(0, 7, "Accept:"))
+            this->_accept = line.substr(8);
+        else if (!line.compare(0, 11, "User-Agent:"))
+            this->_agent = line.substr(12);
+        else if (!line.compare(0, 11, "Connection:"))
+            this->_connection = line.substr(12);
+        else if (!line.compare(0, 18, "Transfer-Encoding:"))
             this->_transferEncoding = true;
-        else
+        else if (!line.compare(0, 16, "Accept-Language:"))
+            this->_acceptLanguage = line.substr(17); 
+        else if (!line.compare(0, 16, "Accept-Encoding:"))
+            this->_acceptEncoding = line.substr(17);
+        else if (!line.compare(0, 13, "Content-Type:"))
         {
-            std::cerr << "Ligne du header pas geree : " << line << std::endl;
-            return (400);
+            std::vector<std::string> args = splitString(line, ';');
+            this->_contentType = args[0].substr(14, args[1].size() - 1);
+            if (args.size() == 2)
+                this->_boundary = args[1].substr(10);
         }
     }
     if (this->_transferEncoding && this->_contentLength2 != -1)
@@ -208,7 +239,7 @@ std::string Request::listDir(Route *route)
     dir = opendir(this->_finalPath.c_str());
     if (!dir)
     {
-        std::cout << "ERROR open directory" << std::endl;
+        std::cerr << "ERROR open directory" << std::endl;
         return "";
     }
     html = "<html><body><h1>Contents :</h1><ul>";
@@ -296,7 +327,6 @@ void    Request::startPost(std::istringstream &stream){
 
     else if (this->_contentType == "multipart/form-data")
     {
-        std::cout << "Je veux faure un upload" << std::endl;
         std::vector<std::string> tmp = splitString(this->_boundary, '=');
         this->sendFileToServ(stream, tmp[1]);
     }
@@ -371,8 +401,7 @@ std::string Request::getContentFile(std::string &boundary)
     return ("");
 }
 
-
-void    Request::getInfoPost(){ 
+void    Request::getInfoPost(void){ 
     std::string line;
     std::istringstream stream(this->_buffer);
 
@@ -456,8 +485,8 @@ std::vector<std::string> Request::doSplit(const std::string& str, char delimiter
 Route *Request::findLocation(){
     std::string copyRequest;
 
-    this->_copyRequest = this->_request;
-    std::vector<std::string> rootToken = doSplit(this->_request, '/');
+    this->_copyRequest = this->_url;
+    std::vector<std::string> rootToken = doSplit(this->_url, '/');
     std::map<std::string, Route *> tmp = this->_server->getConfig()->getRoutes();
     std::map<std::string, Route*>::iterator it;
     it = tmp.end();

@@ -31,9 +31,9 @@ void Client::disconnect(void)
     close(this->_fd);
 }
 
-void Client::newRequest(std::string buffer)
+void Client::newRequest(std::string buffer, ssize_t bytes)
 {
-    this->_currReq = new Request(buffer, &this->_serv, this);
+    this->_currReq = new Request(buffer, bytes, &this->_serv, this);
 }
 
 void Client::updateRequest(std::string buffer, ssize_t bytes)
@@ -62,14 +62,13 @@ int Client::parseRequest(void)
         buff.erase(0, startBody);
         this->_currReq->setBody(buff);
     }
-    this->_currReq->parseHeader();
-    return (0);
+    return (this->_currReq->parseHeader());
 }
 
 bool Client::requestReady(void)
 {
     std::string buff = this->_currReq->getBuffer();
-    if (this->_currReq->getContentLength2() != -1)
+    if (this->_currReq->getContentLength2() == -1)
     {
         size_t startBody = buff.find("\r\n\r\n");
         if (startBody != std::string::npos)
@@ -83,15 +82,24 @@ bool Client::requestReady(void)
                 int nb;
                 ss >> nb;
                 this->_currReq->setContentLength2(nb);
-                this->_currReq->setBytes(this->_currReq->getContentLength2() - startBody + 4);
+                std::cout << "bytes : " << this->_currReq->getBytes() << std::endl;
+                std::cout << "start_body : " << startBody << std::endl; 
+                this->_currReq->setBytes(this->_currReq->getBytes() - startBody + 4);
             }
             else
                 return (true);
         }
     }
+    std::cout << "Etat de la lecture : " << std::endl;
+    std::cout << "bytes readed -> " << this->_currReq->getBytes() << std::endl;
+    std::cout << "contentLength -> " << this->_currReq->getContentLength2() << std::endl;
     if (this->_currReq->getContentLength2() != -1 &&
-        this->_currReq->getContentLength2() <= this->_currReq->getBytes())
+            this->_currReq->getContentLength2() <= this->_currReq->getBytes())
+    {
+        std::cout << "Method POST recupérée" << std::endl;
         return (true);
+    }
+    std::cout << "Return false" << std::endl;
     return (false);
 }
 
