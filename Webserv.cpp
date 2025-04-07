@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/04/07 09:53:44 by glions           ###   ########.fr       */
+/*   Updated: 2025/04/07 14:35:42 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -198,21 +198,23 @@ bool Webserv::handleClient(int clientFd)
 
     // std::cout << "buffer :" << std::endl;
     // std::cout << tmp << std::endl;
-    if (!client->getCurrReq())
-        client->newRequest(tmp, bytesRead);
+    if (!client->getParseReq())
+        client->newParseRequest(tmp, bytesRead);
     else
-        client->updateRequest(tmp, bytesRead);
+        client->updateParseRequest(tmp, bytesRead);
     
-    if (client->requestReady())
+    int error;
+    if ((error = client->requestReady()) == 0)
     {
-        std::cout << "Request ready" << std::endl;
-        int error;
-        if ((error = client->parseRequest()) != 0)
-        {
-            std::cerr << "ERROR PARSING REQUETE -> " << error << std::endl;
-            return (false);
-        }
-        client->getCurrReq()->print();
+        Request req(client->getParseReq());
+        client->deleteParseRequest();
+        req.print();
+        req.handleRequest();
+    }
+    else if (error != -1)
+    {
+        std::cerr << "ERROR PARSING REQUETE -> " << error << std::endl;
+        return (false);
     }
     return (true);
 }

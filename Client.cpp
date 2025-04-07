@@ -2,7 +2,7 @@
 
 Client::Client(int fd, Server &serv) : _serv(serv),
                                        _fd(fd),
-                                       _currReq(NULL)
+                                       _parseReq(NULL)
 {
     struct epoll_event event = {};
     event.events = EPOLLIN;
@@ -19,8 +19,8 @@ Client::Client(int fd, Server &serv) : _serv(serv),
 
 Client::~Client()
 {
-    if (this->_currReq)
-        delete this->_currReq;
+    if (this->_parseReq)
+        delete this->_parseReq;
 }
 
 void Client::disconnect(void)
@@ -31,44 +31,44 @@ void Client::disconnect(void)
     close(this->_fd);
 }
 
-void Client::newRequest(std::string buffer, ssize_t bytes)
+void Client::newParseRequest(std::string buffer, ssize_t bytes)
 {
-    this->_currReq = new Request(buffer, bytes, &this->_serv, this);
+    this->_parseReq = new ParseRequest(buffer, bytes, &this->_serv, this);
 }
 
-void Client::updateRequest(std::string buffer, ssize_t bytes)
+void Client::updateParseRequest(std::string buffer, ssize_t bytes)
 {
-    this->_currReq->addBuffer(buffer, bytes);
-    this->_currReq->setBytes(this->_currReq->getBytes() + bytes);
+    this->_parseReq->addBuffer(buffer, bytes);
+    this->_parseReq->setBytes(this->_parseReq->getBytes() + bytes);
 }
 
-void Client::deleteRequest()
+void Client::deleteParseRequest()
 {
-    if (this->_currReq)
+    if (this->_parseReq)
     {
-        delete this->_currReq;
-        this->_currReq = NULL;
+        delete this->_parseReq;
+        this->_parseReq = NULL;
     }
 }
 
 int Client::parseRequest(void)
 {
-    std::string buff = this->_currReq->getBuffer();
+    std::string buff = this->_parseReq->getBuffer();
     size_t startBody = buff.find("\r\n\r\n");
     if (startBody != std::string::npos)
     {
         startBody += 4;
-        this->_currReq->setHeader(buff.substr(0, startBody));
+        this->_parseReq->setHeader(buff.substr(0, startBody));
         buff.erase(0, startBody);
-        this->_currReq->setBody(buff);
+        this->_parseReq->setBody(buff);
     }
-    return (this->_currReq->parseHeader());
+    return (this->_parseReq->parseHeader());
 }
 
-bool Client::requestReady(void)
+int Client::requestReady(void)
 {
-    std::string buff = this->_currReq->getBuffer();
-    if (this->_currReq->getContentLength2() == -1)
+    std::string buff = this->_parseReq->getBuffer();
+    if (this->_parseReq->getContentLength() == -1)
     {
         size_t startBody = buff.find("\r\n\r\n");
         if (startBody != std::string::npos)
@@ -81,66 +81,26 @@ bool Client::requestReady(void)
                 std::stringstream ss(buff.substr(posContentLength, end - posContentLength));
                 int nb;
                 ss >> nb;
-                this->_currReq->setContentLength2(nb);
-                this->_currReq->setBytes(this->_currReq->getBytes() - startBody + 4);
+                this->_parseReq->setContentLength(nb);
+                this->_parseReq->setBytes(this->_parseReq->getBytes() - startBody + 4);
             }
             else
-                return (true);
+                return (this->parseRequest());
         }
     }
-    if (this->_currReq->getContentLength2() != -1 &&
-            this->_currReq->getContentLength2() <= this->_currReq->getBytes())
+    if (this->_parseReq->getContentLength() != -1 &&
+            this->_parseReq->getContentLength() <= this->_parseReq->getBytes())
     {
         std::cout << "Method POST recupérée" << std::endl;
-        return (true);
+        return this->parseRequest();
     }
     std::cout << "Return false" << std::endl;
-    return (false);
+    return (-1);
 }
 
-Request *Client::getCurrReq(void) const
+ParseRequest *Client::getParseReq(void) const
 {
-    return (this->_currReq);
-}
-
-void Client::resetBuffer(void)
-{
-    this->_buffer.resize(0);
-}
-
-bool Client::addBuffer(std::string buffer, ssize_t bytesRead)
-{
-    this->_buffer.append(buffer, this->_buffer.size(), bytesRead);
-    this->_bytes += bytesRead;
-    if (this->_contentLength == -1)
-    {
-        size_t startBody = this->_buffer.find("\r\n\r\n");
-        if (startBody != std::string::npos)
-        {
-            size_t posContentLength = this->_buffer.find("Content-Length:");
-            if (posContentLength != std::string::npos)
-            {
-                posContentLength += 15;
-                size_t end = this->_buffer.find("\r\n", posContentLength);
-                if (end != std::string::npos)
-                {
-                    std::stringstream ss(this->_buffer.substr(posContentLength, end - posContentLength));
-                    ss >> this->_contentLength;
-                    this->_bytes -= startBody + 4;
-                }
-            }
-            else
-            {
-                std::cout << "GET METHOD" << std::endl;
-                return (true);
-            }
-        }
-    }
-    if (this->_contentLength != -1 && this->_contentLength <= this->_bytes)
-    {
-        return (true);
-    }
-    return (false);
+    return (this->_parseReq);
 }
 
 // GETTERS
