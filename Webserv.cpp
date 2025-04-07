@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/04/06 23:46:46 by glions           ###   ########.fr       */
+/*   Updated: 2025/04/07 09:33:59 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,7 @@ bool Webserv::parsing(std::string file_path)
         std::cerr << e.what() << std::endl;
         return (false);
     }
-    this->printServers();
+    // this->printServers();
     return (true);
 }
 
@@ -134,7 +134,6 @@ bool Webserv::start(void)
 {
     while (1)
     {
-        std::cout << "De retour dans start" << std::endl;
         struct epoll_event events[10];
         int nfds = epoll_wait(this->_epollFd, events, MAX_CLIENTS, -1);
         if (nfds == -1)

@@ -97,14 +97,19 @@ void Request::print(void)
         std::cout << "ContentType        : " << this->_contentType << std::endl;
     if (!this->_boundary.empty())
         std::cout << "Boundary           : " << this->_boundary << std::endl;
+    std::cout << "Route :" << std::endl;
+    this->_route->print();
     std::cout << std::endl;
     std::cout << "----- HEADER -----" << std::endl;
-    std::cout << this->_header << std::endl << std::endl;
+    std::cout << this->_header << std::endl;
     std::cout << "------------------" << std::endl;
     std::cout << "----- BODY -----" << std::endl;
-    std::cout << this->_body << std::endl << std::endl;
+    std::cout << this->_body << std::endl;
     std::cout << "----------------" << std::endl;
 }
+
+
+/* *********** PARSING *********** */
 
 int Request::parseRequest(std::string request)
 {
@@ -189,6 +194,34 @@ int Request::parseHeader(void)
         return (400);
     return (0);
 }
+
+Route *Request::findLocation(){
+    std::string copyRequest;
+
+    this->_copyRequest = this->_url;
+    std::vector<std::string> rootToken = doSplit(this->_url, '/');
+    std::map<std::string, Route *> tmp = this->_server->getConfig()->getRoutes();
+    std::map<std::string, Route*>::iterator it;
+    it = tmp.end();
+    while (it == tmp.end()){
+        it = tmp.find(this->_copyRequest);
+        if (it != tmp.end() && it->first == this->_copyRequest)
+            break ;
+        if (rootToken.size() <= 0)
+            break ;
+        std::string tmp;
+        for (size_t i = 0; i < rootToken.size() - 1; ++i)
+            tmp += rootToken[i];
+        this->_copyRequest = tmp;
+        this->_saveRequest.insert(0, rootToken[rootToken.size() - 1]);
+        rootToken.pop_back();
+    }
+    if (it == tmp.end())
+        return (NULL);
+    return (it->second);
+}
+
+/* **************************** */
 
 std::string    Request::readRequest(){
     std::ifstream file(this->_finalPath.c_str());
@@ -421,7 +454,6 @@ void    Request::getInfoPost(void){
             this->_contentType = args[1];
             if (this->_contentType.at(this->_contentType.size() - 1 == '\0'))
                 this->_contentType.resize(this->_contentType.size() - 1);
-            std::cout << "Content-Type -> " << this->_contentType << std::endl;
             if (args.size() == 3)
                 this->_boundary = args[2];
         }
@@ -482,33 +514,6 @@ std::vector<std::string> Request::doSplit(const std::string& str, char delimiter
 }
 
 
-Route *Request::findLocation(){
-    std::string copyRequest;
-
-    this->_copyRequest = this->_url;
-    std::vector<std::string> rootToken = doSplit(this->_url, '/');
-    std::map<std::string, Route *> tmp = this->_server->getConfig()->getRoutes();
-    std::map<std::string, Route*>::iterator it;
-    it = tmp.end();
-    while (it == tmp.end()){
-        it = tmp.find(this->_copyRequest);
-        if (it != tmp.end() && it->first == this->_copyRequest)
-            break ;
-        if (rootToken.size() <= 0)
-            break ;
-        std::string tmp;
-        for (size_t i = 0; i < rootToken.size() - 1; ++i)
-            tmp += rootToken[i];
-        this->_copyRequest = tmp;
-        this->_saveRequest.insert(0, rootToken[rootToken.size() - 1]);
-        rootToken.pop_back();
-    }
-    if (it == tmp.end())
-        return (NULL);
-    return (it->second);
-}
-
-
 
 void    Request::getInfoRequest(std::string &line){
     std::stringstream ss(line);
@@ -557,7 +562,6 @@ void    Request::handleRequest(){
     std::string htmlContent;
     std::istringstream stream(this->_buffer);
     Route *ptr = NULL;
-    std::cout << this->_buffer << std::endl;
     if (std::getline(stream, line)){
         this->getInfoRequest(line);
         if (this->_version != "HTTP/1.1")

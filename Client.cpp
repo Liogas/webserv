@@ -82,17 +82,12 @@ bool Client::requestReady(void)
                 int nb;
                 ss >> nb;
                 this->_currReq->setContentLength2(nb);
-                std::cout << "bytes : " << this->_currReq->getBytes() << std::endl;
-                std::cout << "start_body : " << startBody << std::endl; 
                 this->_currReq->setBytes(this->_currReq->getBytes() - startBody + 4);
             }
             else
                 return (true);
         }
     }
-    std::cout << "Etat de la lecture : " << std::endl;
-    std::cout << "bytes readed -> " << this->_currReq->getBytes() << std::endl;
-    std::cout << "contentLength -> " << this->_currReq->getContentLength2() << std::endl;
     if (this->_currReq->getContentLength2() != -1 &&
             this->_currReq->getContentLength2() <= this->_currReq->getBytes())
     {
