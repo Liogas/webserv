@@ -40,7 +40,7 @@ Request::~Request(){
 
 void Request::addBuffer(std::string buffer, ssize_t bytes)
 {
-    this->_buffer.append(buffer, this->_buffer.size(), bytes);
+    this->_buffer.append(buffer, 0, bytes);
 }
 
 std::string Request::getBuffer(void) const
@@ -405,10 +405,8 @@ void    Request::sendFileToServ(std::istringstream& stream, std::string boundary
                     "<h1>File " + this->_nameFile + " uploaded ! </h1>");               
             }
             else
-            {
                 this->_htmlContent = this->generateHtmlPage("Upload Failed",
                     "<h1>Upload of file " + this->_nameFile + " error ! </h1>");               
-            }
         }
     }
 }
@@ -461,7 +459,6 @@ void    Request::getInfoPost(void){
 }
 
 void    Request::selectMethod(std::istringstream &stream, Route *route){
-
     if (this->_method == POST)
         (this->getInfoPost(), this->startPost(stream));
     else if (this->_method == GET)

@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/04/07 09:33:59 by glions           ###   ########.fr       */
+/*   Updated: 2025/04/07 09:53:44 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #include <fcntl.h>
 
 # define MAX_CLIENTS 5
-# define BUFFER_SIZE 64000
+# define BUFFER_SIZE 1024
 
 Webserv::Webserv() :
     _servers(),
@@ -214,12 +214,6 @@ bool Webserv::handleClient(int clientFd)
         }
         client->getCurrReq()->print();
     }
-    // if (client->addBuffer(tmp, bytesRead))
-    // {
-    //     Request req(client->getBuffer(), serv, client);
-    //     req.handleRequest();
-    //     client->resetBuffer();
-    // }
     return (true);
 }
 
