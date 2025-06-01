@@ -2,23 +2,28 @@ CXX 		= 	c++
 CXXFLAGS	= 	-Wall -Wextra -Werror -std=c++98 -g
 NAME		= 	webserv
 
-SRCS		= 	main.cpp Webserv.cpp \
-				Client.cpp \
-				ParseConfig.cpp \
-				ServerConfig.cpp \
-				Server.cpp \
-				Route.cpp \
-				utils.cpp \
-				Request.cpp \
-				ParseRequest.cpp
+INCLUDES	= 	-I./inc
+
+SRCS		= 	srcs/main.cpp \
+				srcs/server/Webserv.cpp \
+				srcs/server/Client.cpp \
+				srcs/server/ParseConfig.cpp \
+				srcs/server/ServerConfig.cpp \
+				srcs/server/Server.cpp \
+				srcs/server/Route.cpp \
+				srcs/server/utils.cpp \
+				srcs/server/Request.cpp \
+				srcs/server/ParseRequest.cpp \
+				srcs/cgi/CGI.cpp \
+				srcs/cgi/CGIUtils.cpp \
 
 OBJS		= 	$(SRCS:.cpp=.o)
 
 %.o: %.cpp
-	@$(CXX) $(CXXFLAGS) -o $@ -c $^
+	@$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ -c $^
 
 $(NAME): $(OBJS)
-	@$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJS)
+	@$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(NAME) $(OBJS)
 
 run: $(NAME)
 	@./$(NAME)

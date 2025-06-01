@@ -1,3 +1,7 @@
+# Modifications :
+- Gestion du timeout, utilisation de <ctime>
+- Les clients sont maintenant écoutés sur l'écriture et la lecture
+
 # 🌍 Liste complète des variables d'environnement CGI
 
 Voici la liste des variables d'environnement CGI que le serveur web crée pour un script CGI exécuté :
@@ -42,3 +46,5 @@ echo "<pre>";
 print_r($_SERVER);
 echo "</pre>";
 ?>
+
+
