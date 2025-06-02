@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tissad <tissad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/28 23:45:48 by tissad            #+#    #+#             */
-/*   Updated: 2025/06/02 09:30:01 by glions           ###   ########.fr       */
+/*   Updated: 2025/06/02 12:30:15 by tissad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -447,7 +447,7 @@ int	Request::checkRequest(struct epoll_event *event, bool timeout)
 			std::cerr << "[CGI] Timeout reached, handling CGI timeout" << std::endl;
 			return (this->handleCGITimeout());
 		}
-		if (timeout == false)
+		if (this->_cgi == NULL && timeout == false)
 		{
 			return (responseProcess());
 		}
@@ -475,7 +475,7 @@ int	Request::checkRequest(struct epoll_event *event, bool timeout)
 int Request::handleCGIEvent(struct epoll_event *event, int timeout)
 {
 
-	std::cerr << "[CGI] is running" << std::endl;
+	//std::cerr << "[CGI] is running" << std::endl;
 
 	// Handle CGI write to stdin
 	if ((event->events & EPOLLOUT) && event->data.fd == this->_cgi->getStdinPipe())
@@ -514,12 +514,13 @@ int Request::handleCGITimeout()
 
 	int epollFd = this->_server->getEpollFd();
 
+	std::cerr << "DELETING CGI pipes " << this->_cgi->getStdoutPipe() << std::endl;
 	if (epoll_ctl(epollFd, EPOLL_CTL_DEL, this->_cgi->getStdoutPipe(), NULL) == -1)
 		std::cerr << "Failed to remove CGI stdout pipe from epoll: " << strerror(errno) << std::endl;
-
+	std::cerr << "closing CGI pipes " << this->_cgi->getStdoutPipe() << std::endl; 
 	if (close(this->_cgi->getStdoutPipe()) == -1)
 		std::cerr << "Failed to close CGI stdout pipe: " << strerror(errno) << std::endl;
-
+		
 	if (kill(this->_cgi->getPid(), SIGKILL) == -1)
 		std::cerr << "Failed to kill CGI process: " << strerror(errno) << std::endl;
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.hpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tissad <tissad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 11:23:17 by tissad            #+#    #+#             */
-/*   Updated: 2025/06/01 16:41:05 by glions           ###   ########.fr       */
+/*   Updated: 2025/06/02 11:08:17 by tissad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@
 # define ERROR_400 400
 
 # define EPOLL_TIMEOUT_MS 50
-# define TIMEOUT_MS 10
+# define TIMEOUT_S 5
 # define MAX_EVENTS 3
 class CGI
 {
@@ -55,7 +55,7 @@ class CGI
 		// pipes
 		int									_stdin_pipe[2];  // 0: read, 1: write
 		int									_stdout_pipe[2]; // 0: read, 1: write
-		int									_stderr_pipe[2]; // 0: read, 1: write
+
 
 	
 		
@@ -88,7 +88,7 @@ class CGI
 		
 		int getStdinPipe(void) const { return this->_stdin_pipe[1]; }
 		int getStdoutPipe(void) const { return this->_stdout_pipe[0]; }
-		int getStderrPipe(void) const { return this->_stderr_pipe[0]; }
+
 		int getError(void) const { return this->_error; }
 		int getPid(void) const { return this->_pid; }
 		

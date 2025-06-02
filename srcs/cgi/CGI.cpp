@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tissad <tissad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/21 17:58:03 by tissad            #+#    #+#             */
-/*   Updated: 2025/06/02 09:32:50 by glions           ###   ########.fr       */
+/*   Updated: 2025/06/02 12:52:33 by tissad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -108,6 +108,26 @@ CGI::~CGI()
 	}
 	if (kill(this->_pid, 0) != -1)
 		kill(this->_pid, SIGTERM);
+	if (this->_stdin_pipe[0] != -1)
+	{
+		close(this->_stdin_pipe[0]);
+		this->_stdin_pipe[0] = -1;
+	}
+	if (this->_stdin_pipe[1] != -1)
+	{
+		close(this->_stdin_pipe[1]);
+		this->_stdin_pipe[1] = -1;
+	}
+	if (this->_stdout_pipe[0] != -1)
+	{
+		close(this->_stdout_pipe[0]);
+		this->_stdout_pipe[0] = -1;
+	}
+	if (this->_stdout_pipe[1] != -1)
+	{
+		close(this->_stdout_pipe[1]);
+		this->_stdout_pipe[1] = -1;
+	}
 }
 
 
@@ -238,6 +258,9 @@ bool CGI::cgiCreatePipe(void)
 		return (this->cgiAddLog(strerror(errno), __LINE__), \
 		this->_error = ERROR_500, false);
 	}
+	std::cout << "CGI pipes created successfully" << std::endl;
+	std::cerr << "stdin_pipe[0]: " << this->_stdin_pipe[0] << ", stdin_pipe[1]: " << this->_stdin_pipe[1] << std::endl;
+	std::cerr << "stdout_pipe[0]: " << this->_stdout_pipe[0] << ", stdout_pipe[1]: " << this->_stdout_pipe[1] << std::endl;
 	return (true);
 }
 
@@ -305,9 +328,19 @@ int  CGI::cgiRead(struct epoll_event *event, int timeout)
 
 	if (bytesRead == 0) { // EOF
 		this->_result = res;
-		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, event->data.fd, NULL);
+		if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, event->data.fd, NULL))
+		{
+			std::cerr << "Error removing CGI stdout pipe from epoll: " << strerror(errno) << std::endl;
+			close(event->data.fd);
+			return (ERROR_500);
+		}
 		// std::cout << "fd " << event->data.fd << " closed" << std::endl;
-		close(event->data.fd);
+		if (close(event->data.fd) == -1)
+		{
+			std::cerr << "Error closing CGI stdout pipe: " << strerror(errno) << std::endl;
+			this->_stdout_pipe[0] = -1;
+			return (ERROR_500);
+		} 
 		//std::cerr << readen << " bytes read from CGI stdout at line " << __LINE__ << std::endl;
 		this->cgiAddLog(toString(readen) + " bytes read from CGI stdout at line ", __LINE__);
 		return (200); // return 200 OK
@@ -318,11 +351,15 @@ int  CGI::cgiRead(struct epoll_event *event, int timeout)
 		if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, event->data.fd, NULL) == -1)
 		{
 			std::cerr << "Error removing CGI stdout pipe from epoll: " << strerror(errno) << std::endl;
+			close(event->data.fd);
+			return (ERROR_500);
 		}
 		if (close(event->data.fd) == -1)
 		{
+			this->_stdout_pipe[0] = -1;
 			std::cerr << "Error closing CGI stdout pipe: " << strerror(errno) << std::endl;
 		}
+		this->_stdout_pipe[0] = -1;
 		return (ERROR_500);
 	}
 
@@ -421,7 +458,7 @@ bool	CGI::cgiExec(void)
 			_exit(ERROR_500);
 		execve(this->_args[0], this->_args, this->_env);
 		// if execve fails, exit with error
-		_exit(ERROR_500);
+		exit(ERROR_500);
 	}else{
 		// parent process
 		// close the write end of the stdin pipe
@@ -431,6 +468,8 @@ bool	CGI::cgiExec(void)
 			return (this->cgiAddLog(std::string(strerror(errno)), __LINE__), \
 				this->_error = ERROR_500, false);
 		}
+		this->_stdin_pipe[0] = -1;
+		this->_stdout_pipe[1] = -1;
 		// add the file descriptor to the epoll instance
 		if (!epollAddFd(this->_stdin_pipe[1], EPOLLOUT)
 		  || !epollAddFd(this->_stdout_pipe[0], EPOLLIN))

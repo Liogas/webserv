@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tissad <tissad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/06/02 09:30:30 by glions           ###   ########.fr       */
+/*   Updated: 2025/06/02 12:44:53 by tissad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,6 +43,11 @@ Webserv::~Webserv(void)
 		delete this->_servers[i];
 	if (this->_epollFd != -1)
 		close(this->_epollFd);
+	for (size_t i = 0; i < this->_requests.size(); i++)
+	{
+		if (this->_requests[i].first)
+			delete this->_requests[i].first;
+	}
 }
 
 
@@ -196,7 +201,7 @@ bool Webserv::start(void)
 	}
 
 	int status = 0;
-	wait(&status); // PAS AUTORISE
+	waitpid(-1, &status, 0); // PAS AUTORISE
 	return true;
 }
 
@@ -219,10 +224,8 @@ void Webserv::handleEvent(const epoll_event& event)
 	{
 		if (this->_servers[j]->getFd() == fd)
 		{
-			isNewClient = true;
-			if (!this->_servers[j]->newClient())
-				return;
-			break;
+			isNewClient = this->_servers[j]->newClient();
+			return; // New client connection handled, exit the method
 		}
 	}
 	if (!isNewClient)
@@ -235,12 +238,16 @@ void Webserv::handleEvent(const epoll_event& event)
 			std::cout << "[Client fd " << fd << "] response sended." << std::endl;
 		else
 			cgiEvent = const_cast<epoll_event*>(&event);
+		
 	}
 
 	// Process requests
+	std::cout << "Number of requests: " << this->_requests.size() << std::endl;
 	for (std::vector<std::pair<Request*, std::time_t> >::iterator it = this->_requests.begin();
 		it != this->_requests.end(); ++it)
 	{
+		std::cout << "[Request] checking request for URI: " << it->first->getHeaderInfo().uri << std::endl;	
+		
 		if (it->first->handleRequest(cgiEvent, false))
 		{
 			if (it->first)
@@ -258,7 +265,7 @@ void Webserv::handleEvent(const epoll_event& event)
 /**
  * @brief Checks and cleans up requests that have exceeded the timeout threshold.
  * @details This method iterates through the list of requests and increments their timeout counters.
- *          If a request's timeout counter exceeds the defined TIMEOUT_MS, it attempts to handle the request.
+ *          If a request's timeout counter exceeds the defined TIMEOUT_S, it attempts to handle the request.
  *          If the request is successfully handled, it is deleted from the list; otherwise, it remains in the queue.
  */
 void Webserv::checkRequestTimeouts()
@@ -268,7 +275,7 @@ void Webserv::checkRequestTimeouts()
 	for (std::vector<std::pair<Request*, std::time_t> >::iterator it = this->_requests.begin();
 			it != this->_requests.end(); ++it)
 	{
-		if (std::time(NULL) - it->second >= TIMEOUT_MS)
+		if (std::time(NULL) - it->second >= TIMEOUT_S)
 		{
 			std::cerr << "[Request] timeout for URI: " << it->first->getHeaderInfo().uri << std::endl;
 
