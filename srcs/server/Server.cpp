@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tissad <tissad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/28 23:39:38 by tissad            #+#    #+#             */
-/*   Updated: 2025/05/31 16:01:33 by glions           ###   ########.fr       */
+/*   Updated: 2025/06/02 16:39:55 by tissad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -122,7 +122,9 @@ void Server::initStatusDescriptions(void)
  */
 bool Server::init(void)
 {
+     int reuse = 1;
     this->_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    setsockopt(this->_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
     
     if (fcntl(this->_fd, F_SETFL, O_NONBLOCK) == -1)
     {
@@ -136,8 +138,8 @@ bool Server::init(void)
         strerror(errno);
         return (false);
     }
-    int reuse = 1;
-    setsockopt(this->_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+   
+
     std::cout << "[Server " << toString(this->getFd()) <<
         "] socket initialized" << std::endl;
     this->initEnv();
@@ -170,6 +172,8 @@ void Server::initEnv(void)
  */
 bool Server::bindSocket(int maxClient)
 {
+    std::cerr << "[Server " << this->_fd << "] Binding to port "
+        << this->_config->getPort() << std::endl;
     this->_address.sin_family = AF_INET;
     this->_address.sin_addr.s_addr = INADDR_ANY;
     this->_address.sin_port = htons(this->_config->getPort());
@@ -179,16 +183,19 @@ bool Server::bindSocket(int maxClient)
     {
         std::string error = "[!Server " + toString(this->getFd()) + "!] bind";
         strerror(errno);
+        std::cerr << error << std::endl;
         return (false);
     }
     if (listen(this->_fd, maxClient) == -1)
     {
         std::string error = "[!Server " + toString(this->getFd()) + "!] listen";
+        std::cerr << error << std::endl;
         strerror(errno);
         return (false);
     }
     std::cout << "[Server " << this->_fd << "] Listening on port "
         << ntohs(this->_address.sin_port) << std::endl;
+    std::cout << "binding done" << std::endl;
     return (true);
 }
 
@@ -203,7 +210,9 @@ bool Server::newClient(void)
 {
     Client *client = new Client(*this);
     socklen_t addr_len = sizeof(struct sockaddr_in);
-    int client_fd = accept(this->_fd, (struct sockaddr *)(&(client->getAddr())), &addr_len);
+    
+    struct sockaddr *client_addr = reinterpret_cast<struct sockaddr *>(&(client->getAddr()));
+    int client_fd = accept(this->_fd, client_addr, &addr_len);
     if (client_fd == -1)
     {
         strerror(errno);

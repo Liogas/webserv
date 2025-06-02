@@ -6,7 +6,7 @@
 /*   By: tissad <tissad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/28 23:45:48 by tissad            #+#    #+#             */
-/*   Updated: 2025/06/02 12:30:15 by tissad           ###   ########.fr       */
+/*   Updated: 2025/06/02 14:38:53 by tissad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -548,7 +548,7 @@ int Request::readFile(std::string &path){
 	}
 	else
 	{
-		std::cerr << "ERROR open file" << std::endl;
+		std::cerr << "ERROR open file from request" << std::endl;
 		return (404);
 	}
 }

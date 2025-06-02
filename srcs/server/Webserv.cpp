@@ -6,7 +6,7 @@
 /*   By: tissad <tissad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/06/02 12:44:53 by tissad           ###   ########.fr       */
+/*   Updated: 2025/06/02 16:46:38 by tissad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,9 +45,10 @@ Webserv::~Webserv(void)
 		close(this->_epollFd);
 	for (size_t i = 0; i < this->_requests.size(); i++)
 	{
-		if (this->_requests[i].first)
-			delete this->_requests[i].first;
+		delete this->_requests[i].first;
+		this->_requests[i].first = NULL;
 	}
+	
 }
 
 
@@ -225,7 +226,7 @@ void Webserv::handleEvent(const epoll_event& event)
 		if (this->_servers[j]->getFd() == fd)
 		{
 			isNewClient = this->_servers[j]->newClient();
-			return; // New client connection handled, exit the method
+			return;
 		}
 	}
 	if (!isNewClient)
@@ -238,16 +239,12 @@ void Webserv::handleEvent(const epoll_event& event)
 			std::cout << "[Client fd " << fd << "] response sended." << std::endl;
 		else
 			cgiEvent = const_cast<epoll_event*>(&event);
-		
 	}
 
 	// Process requests
-	std::cout << "Number of requests: " << this->_requests.size() << std::endl;
 	for (std::vector<std::pair<Request*, std::time_t> >::iterator it = this->_requests.begin();
 		it != this->_requests.end(); ++it)
 	{
-		std::cout << "[Request] checking request for URI: " << it->first->getHeaderInfo().uri << std::endl;	
-		
 		if (it->first->handleRequest(cgiEvent, false))
 		{
 			if (it->first)
