@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/21 17:58:03 by tissad            #+#    #+#             */
-/*   Updated: 2025/06/01 17:55:56 by glions           ###   ########.fr       */
+/*   Updated: 2025/06/02 09:32:50 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -306,7 +306,7 @@ int  CGI::cgiRead(struct epoll_event *event, int timeout)
 	if (bytesRead == 0) { // EOF
 		this->_result = res;
 		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, event->data.fd, NULL);
-		std::cout << "fd " << event->data.fd << " closed" << std::endl;
+		// std::cout << "fd " << event->data.fd << " closed" << std::endl;
 		close(event->data.fd);
 		//std::cerr << readen << " bytes read from CGI stdout at line " << __LINE__ << std::endl;
 		this->cgiAddLog(toString(readen) + " bytes read from CGI stdout at line ", __LINE__);

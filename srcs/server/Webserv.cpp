@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/19 09:28:54 by glions            #+#    #+#             */
-/*   Updated: 2025/06/01 15:41:52 by glions           ###   ########.fr       */
+/*   Updated: 2025/06/02 09:30:30 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -354,7 +354,7 @@ bool Webserv::handleClient(const epoll_event& event, bool sendMode)
 		}
 		else if (error != -1)
 		{
-			if (!client->sendErrorPage(error))
+			if (!client->buildErrorPage(error))
 			{
 				delete client;
 				client = NULL;

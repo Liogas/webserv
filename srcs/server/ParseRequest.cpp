@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 11:10:36 by glions            #+#    #+#             */
-/*   Updated: 2025/06/01 16:59:51 by glions           ###   ########.fr       */
+/*   Updated: 2025/06/02 09:31:08 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,10 +157,7 @@ int ParseRequest::parseHeader(void)
     std::istringstream stream(this->_header);
     int error;
     if (std::getline(stream, line) && (error = parseRequest(line)) != 0)
-    {
-        std::cerr << "ERROR REQUEST LINE -> " << error << std::endl;
         return (error);
-    }
     while (std::getline(stream, line))
     {
         if (!line.compare(0, 5, "Host:") && (error = parseHost(line)) != 0)

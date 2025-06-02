@@ -6,7 +6,7 @@
 /*   By: glions <glions@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/28 23:45:48 by tissad            #+#    #+#             */
-/*   Updated: 2025/06/01 16:54:46 by glions           ###   ########.fr       */
+/*   Updated: 2025/06/02 09:30:01 by glions           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,7 +117,7 @@ bool    Request::handleRequest(struct epoll_event *event, bool timeout){
 	{
 		if (this->_client && routeExists(this->_client->getHistoric(), this->_route->getPath())){
 			this->_client->clearHistoric();
-			if (!this->_client->sendErrorPage(508)){
+			if (!this->_client->buildErrorPage(508)){
 				delete this->_client;
 				this->_client = NULL;
 			}
@@ -125,10 +125,20 @@ bool    Request::handleRequest(struct epoll_event *event, bool timeout){
 		}
 		if (this->_client && this->checkReturn(this->_route)){
 			// std::cerr << "Redirecting to: " << this->_route->getRedir().path << std::endl;
-			if (!this->_client->sendResponse("", 1, 301, this)){
-				delete this->_client;
-				this->_client = NULL;
+			if (!this->_client->buildResponse("", 1, 301, this))
+			{
+				if (this->_client)
+				{
+					this->_client->clearHistoric();
+					this->_client->disconnect();
+					delete this->_client;
+					this->_client = NULL;
+				}
 			}
+			// if (!this->_client->sendResponse("", 1, 301, this)){
+			// 	delete this->_client;
+			// 	this->_client = NULL;
+			// }
 			return (true);
 		}
 		int ret = this->selectMethod(event, timeout);
@@ -162,9 +172,9 @@ bool    Request::handleRequest(struct epoll_event *event, bool timeout){
 		}
 		else
 		{
-			if (this->_client != NULL && !this->_client->sendErrorPage(ret))
+			if (this->_client != NULL && !this->_client->buildErrorPage(ret))
 			{
-				std::cerr << "Error sending error page" << std::endl;
+				std::cerr << "Error buildding error page" << std::endl;
 				if (this->_client)
 				{
 					this->_client->clearHistoric();
@@ -179,7 +189,7 @@ bool    Request::handleRequest(struct epoll_event *event, bool timeout){
 	else
 	{
 		this->_client->clearHistoric();
-		if (!this->_client->sendErrorPage(400)){
+		if (!this->_client->buildErrorPage(400)){
 			delete this->_client;
 			this->_client = NULL;
 		}

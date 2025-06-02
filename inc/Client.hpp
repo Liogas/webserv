@@ -32,6 +32,7 @@ class Client
         bool sendResponse(std::string htmlContent, int isReturn, int code, Request *req);
         std::string genFile(int code);
         bool buildResponse(std::string htmlContent, int isReturn, int code, Request *req);
+        bool buildErrorPage(int code);
         
         void setFd(int fd);
         // GETTERS

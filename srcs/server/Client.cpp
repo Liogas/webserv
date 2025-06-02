@@ -418,6 +418,45 @@ std::string Client::genFile(int code){
 	return (htmlContent);
 }
 
+bool		Client::buildErrorPage(int code)
+{
+	this->_response = "";
+	std::map<int, std::string> errorPage = this->_serv.getConfig()->getErrorPages();
+	std::map<int, std::string>::iterator it = errorPage.begin();
+	for(; it != errorPage.end(); ++it){
+		if (it->first == code)
+			break;
+	}
+	std::string htmlContent;
+	if (it == errorPage.end() || !readFile(it->second))
+	{
+		this->_responseBody =  genFile(code);
+	}
+	// build th header
+	{
+		std::string convertCode = toString(code);
+		std::string description = this->_serv.getStatusDescription(convertCode);
+		ssize_t content_length = this->_responseBody.size();
+		std::string content_string = toString(content_length);
+		this->_response = "HTTP/1.1 " + convertCode + " " + description + "\r\n";
+		
+		this->_response += "Content-Type: text/html\r\n";
+		this->_response +=
+		"Connection: keep-alive\r\n"
+		"Content-Length: " + content_string + "\r\n" + "\r\n";
+	}
+	struct epoll_event event = {};
+	event.events = EPOLLIN | EPOLLOUT;
+	event.data.fd = this->_fd;
+	if (epoll_ctl(this->_serv.getEpollFd(), EPOLL_CTL_MOD, this->_fd, &event) == -1)
+	{
+		strerror(errno);
+		return (false);
+	}
+	this->_response += this->_responseBody;
+	return (true);
+}
+
 bool      Client::sendErrorPage(int code){
 	std::string response;
 	std::cerr << "Error page code : " << code << std::endl;
@@ -455,7 +494,6 @@ bool      Client::sendErrorPage(int code){
 		return (false);
 	}
 	return (true);
-
 }
 
 bool Client::readFile(std::string &path)
